@@ -1,0 +1,3 @@
+# Noosphere
+
+Notes on auth.

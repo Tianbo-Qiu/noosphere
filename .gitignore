@@ -1,0 +1,37 @@
+# Binaries
+/bin/
+/dist/
+/build/
+
+# Go test/build artifacts
+*.test
+*.out
+coverage.out
+coverage.html
+
+# Local config and secrets
+.env
+.env.*
+*.local
+/config.json
+/tokens.json
+/*.token
+/*.tokens
+
+# OS/editor noise
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Temporary files
+/tmp/
+/temp/
+*.tmp
+
+
+# Docs build output and Python env
+/site/
+.venv/
+__pycache__/
