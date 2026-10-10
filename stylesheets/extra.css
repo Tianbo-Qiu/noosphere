@@ -1,0 +1,5 @@
+/* The logo is black line art; render it white on the colored header and drawer */
+.md-header__button.md-logo img,
+.md-nav__button.md-logo img {
+  filter: invert(1);
+}
