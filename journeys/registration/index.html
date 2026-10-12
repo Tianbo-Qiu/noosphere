@@ -495,6 +495,117 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#data-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data model
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Data model">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tables
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Tables">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#identities" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        identities
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#identity_credentials" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        identity_credentials
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#identity_credential_identifiers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        identity_credential_identifiers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sessions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        sessions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#registration_flows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        registration_flows
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sign-up-transaction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sign-up transaction
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -645,6 +756,117 @@
         
       </ul>
     </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data model
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Data model">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tables
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Tables">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#identities" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        identities
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#identity_credentials" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        identity_credentials
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#identity_credential_identifiers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        identity_credential_identifiers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sessions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        sessions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#registration_flows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        registration_flows
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sign-up-transaction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sign-up transaction
+      
+    </span>
+  </a>
   
 </li>
         
@@ -813,6 +1035,416 @@
 <li>Kratos looks for its own suffix in the list. If the count is above <code>max_breaches</code> (default <code>0</code>), the password is rejected with an error on the <code>password</code> field.</li>
 </ol>
 <p>Hundreds of passwords share each prefix, so HIBP cannot tell which one was checked. This technique is called <a href="https://en.wikipedia.org/wiki/K-anonymity">k-anonymity</a>; Cloudflare <a href="https://blog.cloudflare.com/validating-leaked-passwords-with-k-anonymity/">describes its design for HIBP</a>. SHA-1 is used only because the HIBP dataset is indexed by it; the stored password is hashed separately with <a href="https://en.wikipedia.org/wiki/Bcrypt">bcrypt</a>. If HIBP is unreachable, Kratos accepts the password (<code>ignore_network_errors</code> defaults to <code>true</code>). This is a fail-open choice: an outage does not block sign-ups, but the leak check is skipped.</p>
+<h2 id="data-model">Data model<a class="headerlink" href="#data-model" title="Permanent link">&para;</a></h2>
+<h3 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h3>
+<p>Five tables in three groups:</p>
+<ul>
+<li><strong>The person:</strong> <code>identities</code>.</li>
+<li><strong>How they prove it:</strong> <code>identity_credentials</code> holds the secret, and <code>identity_credential_identifiers</code> holds what the user types to find it.</li>
+<li><strong>Short-lived state:</strong> <code>registration_flows</code> for a sign-up in progress, and <code>sessions</code> for a logged-in device.</li>
+</ul>
+<pre class="mermaid"><code>erDiagram
+    identities ||--o{ identity_credentials : "proves with"
+    identity_credentials ||--|{ identity_credential_identifiers : "found by"
+    identities ||--o{ sessions : "logged in as"</code></pre>
+<ul>
+<li><code>identities</code> 1:M <code>identity_credentials</code>: an identity has zero or more credentials, at most one per type.</li>
+<li><code>identity_credentials</code> 1:M <code>identity_credential_identifiers</code>: a credential has one or more identifiers.</li>
+<li><code>identities</code> 1:M <code>sessions</code>: an identity has zero or more sessions, one per logged-in device.</li>
+<li><code>registration_flows</code> stands alone: a flow exists before any identity does.</li>
+</ul>
+<p>Every table uses a <a href="https://www.rfc-editor.org/rfc/rfc9562#name-uuid-version-7">UUIDv7</a> primary key, generated by PostgreSQL 18 with <a href="https://www.postgresql.org/docs/18/functions-uuid.html"><code>uuidv7()</code></a>. The IDs are unguessable but time-ordered, so new rows append to the index like a sequence. IDs are never used as secrets.</p>
+<p>All times are <a href="https://www.postgresql.org/docs/18/datatype-datetime.html"><code>timestamptz</code></a>, so the server's time zone cannot change what is stored.</p>
+<h3 id="tables">Tables<a class="headerlink" href="#tables" title="Permanent link">&para;</a></h3>
+<p>The examples follow Ada, who signs up with <code>Ada@Example.com</code>.</p>
+<h4 id="identities">identities<a class="headerlink" href="#identities" title="Permanent link">&para;</a></h4>
+<p>One row per person. Everything else points to it.</p>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Type</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id</code></td>
+<td><code>uuid</code> PK</td>
+<td></td>
+</tr>
+<tr>
+<td><code>traits</code></td>
+<td><a href="https://www.postgresql.org/docs/18/datatype-json.html"><code>jsonb</code></a></td>
+<td>Profile: <code>email</code>, <code>first_name</code>, <code>last_name</code></td>
+</tr>
+<tr>
+<td><code>created_at</code>, <code>updated_at</code></td>
+<td><code>timestamptz</code></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>Example:</p>
+<table>
+<thead>
+<tr>
+<th>id</th>
+<th>traits</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>01a12be9-a598-707b-a6a3-1f96331092cc</code></td>
+<td><code>{"email": "Ada@Example.com", "first_name": "Ada", "last_name": "Lovelace"}</code></td>
+</tr>
+</tbody>
+</table>
+<p>There is deliberately no unique constraint on <code>traits.email</code>. The profile keeps the email as typed. What must be unique is the login identifier, enforced in <code>identity_credential_identifiers</code>.</p>
+<h4 id="identity_credentials">identity_credentials<a class="headerlink" href="#identity_credentials" title="Permanent link">&para;</a></h4>
+<p>One row per way the person can prove who they are: password now, passkeys or social sign-in later. A new login method is a new row, not a new column.</p>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Type</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id</code></td>
+<td><code>uuid</code> PK</td>
+<td></td>
+</tr>
+<tr>
+<td><code>identity_id</code></td>
+<td><code>uuid</code> → <code>identities</code>, cascade delete</td>
+<td></td>
+</tr>
+<tr>
+<td><code>type</code></td>
+<td><code>text</code>, checked</td>
+<td>Login method, such as <code>password</code>; later <code>webauthn</code> or <code>oidc</code></td>
+</tr>
+<tr>
+<td><code>config</code></td>
+<td><code>jsonb</code></td>
+<td>Method-specific data, such as the password hash</td>
+</tr>
+<tr>
+<td><code>created_at</code>, <code>updated_at</code></td>
+<td><code>timestamptz</code></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>Example:</p>
+<table>
+<thead>
+<tr>
+<th>id</th>
+<th>identity_id</th>
+<th>type</th>
+<th>config</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>01a12be9-a599-74c7-b7e6-70439cada89d</code></td>
+<td><code>01a12be9-a598-707b-a6a3-1f96331092cc</code></td>
+<td><code>password</code></td>
+<td><code>{"hashed_password": "$argon2id$v=19$m=65536,t=3,p=4$…"}</code></td>
+</tr>
+</tbody>
+</table>
+<p>Constraints:</p>
+<ul>
+<li><strong><code>FOREIGN KEY (identity_id) → identities</code>, cascade delete.</strong> A credential must belong to a real identity. A password credential for identity <code>01a12be8-3280-7c45-81ad-1c992c1aa770</code>, which does not exist, is rejected. Deleting Ada's identity deletes her password credential with it, so no password is left behind for an account that is gone.</li>
+<li><strong><code>CHECK (type IN ('password'))</code>.</strong> Only known methods. A row with type <code>pasword</code> is rejected instead of becoming a credential no login code ever reads.</li>
+<li><strong><code>UNIQUE (identity_id, type)</code>.</strong> At most one credential per method. A second <code>password</code> row for identity <code>01a12be9-a598-707b-a6a3-1f96331092cc</code> is rejected; otherwise login would not know which of Ada's two hashes to check.</li>
+<li><strong><code>UNIQUE (id, type)</code>.</strong> Needed only for the foreign key from <code>identity_credential_identifiers</code>. Postgres requires a foreign key to point at columns with a unique constraint.</li>
+</ul>
+<p>The password hash is stored in <a href="https://github.com/P-H-C/phc-string-format/blob/master/phc-sf-spec.md">PHC string format</a>. The algorithm and its parameters travel with the hash, so they can be raised later and old hashes upgraded at the next login. <a href="https://en.wikipedia.org/wiki/Argon2">Argon2id</a> is the first choice in the <a href="https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html">OWASP Password Storage Cheat Sheet</a>.</p>
+<h4 id="identity_credential_identifiers">identity_credential_identifiers<a class="headerlink" href="#identity_credential_identifiers" title="Permanent link">&para;</a></h4>
+<p>What the user types to find a credential at login, such as their email. The credential is the lock; the identifier says which lock to try. It is a separate table because one credential can have several identifiers, for example a password usable with either an email or a username.</p>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Type</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id</code></td>
+<td><code>uuid</code> PK</td>
+<td></td>
+</tr>
+<tr>
+<td><code>credential_id</code></td>
+<td><code>uuid</code></td>
+<td>The credential this identifier finds</td>
+</tr>
+<tr>
+<td><code>type</code></td>
+<td><code>text</code></td>
+<td>Login method of the credential, such as <code>password</code>; part of the unique key</td>
+</tr>
+<tr>
+<td><code>identifier</code></td>
+<td><code>text</code></td>
+<td>What the user types at login, such as <code>ada@example.com</code>; trimmed and lowercased for emails</td>
+</tr>
+</tbody>
+</table>
+<p>Example:</p>
+<table>
+<thead>
+<tr>
+<th>id</th>
+<th>credential_id</th>
+<th>type</th>
+<th>identifier</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>01a12be9-a59a-715f-9320-76c6be463887</code></td>
+<td><code>01a12be9-a599-74c7-b7e6-70439cada89d</code></td>
+<td><code>password</code></td>
+<td><code>ada@example.com</code></td>
+</tr>
+</tbody>
+</table>
+<p>Constraints:</p>
+<ul>
+<li><strong><code>UNIQUE (type, identifier)</code>.</strong> One account per login. When someone else signs up with <code>ada@example.com</code>, inserting <code>(password, ada@example.com)</code> fails with Postgres <a href="https://www.postgresql.org/docs/18/errcodes-appendix.html">error <code>23505</code></a> (<code>unique_violation</code>). This is what stops duplicate sign-ups. A passkey row <code>(webauthn, ada@example.com)</code> is still allowed, because uniqueness is per method.</li>
+<li><strong><code>FOREIGN KEY (credential_id, type) → identity_credentials (id, type)</code>, cascade delete.</strong> The identifier must point at a real credential of the same method. An identifier with credential <code>01a12be9-a599-74c7-b7e6-70439cada89d</code> and type <code>oidc</code> is rejected, because that credential's type is <code>password</code>. Deleting the credential deletes its identifier, so the email can be used to sign up again.</li>
+</ul>
+<p><code>type</code> is copied into this table because a <a href="https://www.postgresql.org/docs/18/ddl-constraints.html#DDL-CONSTRAINTS-UNIQUE-CONSTRAINTS">unique constraint</a> can only cover columns of one table. The composite <a href="https://www.postgresql.org/docs/18/ddl-constraints.html#DDL-CONSTRAINTS-FK">foreign key</a> is what keeps the copy honest.</p>
+<p>Normalization happens before insert, and the rule depends on the method. For password login, emails are trimmed and lowercased, so <code>Ada@Example.com</code> is stored as <code>ada@example.com</code> and <code>ADA@example.com</code> hits the unique constraint. A social sign-in subject ID is case-sensitive and kept as is.</p>
+<h4 id="sessions">sessions<a class="headerlink" href="#sessions" title="Permanent link">&para;</a></h4>
+<p>One row per logged-in device. Logging out one device does not touch the others.</p>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Type</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id</code></td>
+<td><code>uuid</code> PK</td>
+<td></td>
+</tr>
+<tr>
+<td><code>token_hash</code></td>
+<td><code>bytea</code>, unique</td>
+<td>SHA-256 of the cookie token</td>
+</tr>
+<tr>
+<td><code>identity_id</code></td>
+<td><code>uuid</code> → <code>identities</code>, cascade delete</td>
+<td>Indexed</td>
+</tr>
+<tr>
+<td><code>active</code></td>
+<td><code>boolean</code></td>
+<td>Set to <code>false</code> on logout</td>
+</tr>
+<tr>
+<td><code>authenticated_at</code>, <code>issued_at</code>, <code>expires_at</code></td>
+<td><code>timestamptz</code></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>Example, Ada on her laptop and phone, after logging out the phone:</p>
+<table>
+<thead>
+<tr>
+<th>id</th>
+<th>token_hash</th>
+<th>identity_id</th>
+<th>active</th>
+<th>expires_at</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>01a12be9-a59b-7960-b916-09ef91f6ffd0</code></td>
+<td><code>\xca89d7ee0f5c7bdcf54ef44ed4bd7178bd9b61f830f0955e9d4a6e4f0ff14436</code></td>
+<td><code>01a12be9-a598-707b-a6a3-1f96331092cc</code></td>
+<td><code>true</code></td>
+<td>2026-10-12 10:00</td>
+</tr>
+<tr>
+<td><code>01a12c1f-2100-7259-8053-8c6eb59da032</code></td>
+<td><code>\x05942f4bfc35d135c2174cd6cbc0441b8719b2701da3fa984524214527b8d19a</code></td>
+<td><code>01a12be9-a598-707b-a6a3-1f96331092cc</code></td>
+<td><code>false</code></td>
+<td>2026-10-12 11:00</td>
+</tr>
+</tbody>
+</table>
+<p>Constraints:</p>
+<ul>
+<li><strong><code>UNIQUE (token_hash)</code>.</strong> A cookie must lead to exactly one session. A second row with the same hash is rejected, so a lookup by cookie can never return someone else's session.</li>
+<li><strong><code>FOREIGN KEY (identity_id) → identities</code>, cascade delete.</strong> A session for a missing identity is rejected. Deleting Ada's identity deletes both sessions, which logs her out everywhere.</li>
+</ul>
+<p>The cookie carries a random 32-byte token, and the table stores only its hash, so a database leak gives no usable sessions. A fast hash is enough here, unlike for passwords, because the token is fully random and cannot be guessed. See the <a href="https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html">OWASP Session Management Cheat Sheet</a>.</p>
+<p><code>identity_id</code> also needs its own index. Postgres does not index foreign key columns automatically, and without it, listing Ada's sessions or deleting her identity scans the whole table.</p>
+<h4 id="registration_flows">registration_flows<a class="headerlink" href="#registration_flows" title="Permanent link">&para;</a></h4>
+<p>One row per sign-up attempt. It keeps what the user typed and the errors until they succeed, without creating an account.</p>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Type</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id</code></td>
+<td><code>uuid</code> PK</td>
+<td></td>
+</tr>
+<tr>
+<td><code>csrf_token</code></td>
+<td><code>text</code></td>
+<td>Ties the flow to the browser that started it</td>
+</tr>
+<tr>
+<td><code>state</code></td>
+<td><code>jsonb</code></td>
+<td>Submitted values (never the password) and errors per field</td>
+</tr>
+<tr>
+<td><code>expires_at</code></td>
+<td><code>timestamptz</code></td>
+<td>Rejected after this; deleted later</td>
+</tr>
+<tr>
+<td><code>created_at</code>, <code>updated_at</code></td>
+<td><code>timestamptz</code></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>Example, after Ada's first attempt with a password that is too short:</p>
+<table>
+<thead>
+<tr>
+<th>id</th>
+<th>state</th>
+<th>expires_at</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>01a12be8-3280-760b-a59b-6095af80070a</code></td>
+<td><code>{"values": {"email": "Ada@Example.com", "first_name": "Ada", "last_name": "Lovelace"}, "errors": {"password": "must be at least 8 characters"}}</code></td>
+<td>2026-10-11 10:10</td>
+</tr>
+</tbody>
+</table>
+<p>Constraints:</p>
+<ul>
+<li><strong><code>NOT NULL</code> on <code>expires_at</code> and <code>csrf_token</code>.</strong> Every flow must expire and be tied to a browser. A flow without them is rejected, instead of living forever or being usable from any browser.</li>
+<li><strong>No foreign key to <code>identities</code>.</strong> A flow exists before any identity, and most flows never create one.</li>
+</ul>
+<h3 id="sign-up-transaction">Sign-up transaction<a class="headerlink" href="#sign-up-transaction" title="Permanent link">&para;</a></h3>
+<p>A successful sign-up creates four rows, and they must either all exist or none of them. So they are written in one <a href="https://www.postgresql.org/docs/18/tutorial-transactions.html">transaction</a>:</p>
+<ol>
+<li>
+<p><code>identities</code>: Ada's profile.</p>
+<table>
+<thead>
+<tr>
+<th>id</th>
+<th>traits</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>01a12be9-a598-707b-a6a3-1f96331092cc</code></td>
+<td><code>{"email": "Ada@Example.com", "first_name": "Ada", "last_name": "Lovelace"}</code></td>
+</tr>
+</tbody>
+</table>
+</li>
+<li>
+<p><code>identity_credentials</code>: her password hash.</p>
+<table>
+<thead>
+<tr>
+<th>id</th>
+<th>identity_id</th>
+<th>type</th>
+<th>config</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>01a12be9-a599-74c7-b7e6-70439cada89d</code></td>
+<td><code>01a12be9-a598-707b-a6a3-1f96331092cc</code></td>
+<td><code>password</code></td>
+<td><code>{"hashed_password": "$argon2id$v=19$m=65536,t=3,p=4$…"}</code></td>
+</tr>
+</tbody>
+</table>
+</li>
+<li>
+<p><code>identity_credential_identifiers</code>: her email for login.</p>
+<table>
+<thead>
+<tr>
+<th>id</th>
+<th>credential_id</th>
+<th>type</th>
+<th>identifier</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>01a12be9-a59a-715f-9320-76c6be463887</code></td>
+<td><code>01a12be9-a599-74c7-b7e6-70439cada89d</code></td>
+<td><code>password</code></td>
+<td><code>ada@example.com</code></td>
+</tr>
+</tbody>
+</table>
+</li>
+<li>
+<p><code>sessions</code>: her laptop.</p>
+<table>
+<thead>
+<tr>
+<th>id</th>
+<th>token_hash</th>
+<th>identity_id</th>
+<th>active</th>
+<th>expires_at</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>01a12be9-a59b-7960-b916-09ef91f6ffd0</code></td>
+<td><code>\xca89d7ee0f5c7bdcf54ef44ed4bd7178bd9b61f830f0955e9d4a6e4f0ff14436</code></td>
+<td><code>01a12be9-a598-707b-a6a3-1f96331092cc</code></td>
+<td><code>true</code></td>
+<td>2026-10-12 10:00</td>
+</tr>
+</tbody>
+</table>
+</li>
+</ol>
+<p>Suppose the email is already taken. Steps 1 and 2 succeed, then step 3 is rejected by <code>UNIQUE (type, identifier)</code>. Without a transaction, Ada's identity and password would stay in the database: an account with a password that nobody can log in to. With a transaction, Postgres undoes steps 1 and 2, and the database looks as if the sign-up never happened.</p>
 
 
 
