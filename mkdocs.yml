@@ -7,9 +7,9 @@ edit_uri: edit/main/docs/
 
 theme:
   name: material
-  logo: assets/logo.svg
-  favicon: assets/favicon/favicon-32x32.png
+  favicon: assets/favicon.svg
   icon:
+    logo: material/shield-key-outline
     repo: fontawesome/brands/github
   font:
     text: Inter
@@ -86,9 +86,6 @@ markdown_extensions:
   - pymdownx.tasklist:
       custom_checkbox: true
   - pymdownx.tilde
-
-extra_css:
-  - stylesheets/extra.css
 
 extra_javascript:
   - javascripts/mathjax.js
