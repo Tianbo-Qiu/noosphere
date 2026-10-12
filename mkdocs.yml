@@ -98,4 +98,6 @@ extra_javascript:
 
 nav:
   - Home: index.md
+  - Journeys:
+      - Registration: journeys/registration.md
   - Test: test.md
