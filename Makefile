@@ -44,3 +44,8 @@ migrate-down:
 
 migrate-status:
 	$(GOOSE) status
+
+.PHONY: generate
+
+generate:
+	go tool sqlc generate
