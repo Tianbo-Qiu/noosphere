@@ -13,3 +13,6 @@ sql:
             go_type: github.com/google/uuid.UUID
           - db_type: timestamptz
             go_type: time.Time
+          - column: identities.traits
+            go_type:
+              type: Traits

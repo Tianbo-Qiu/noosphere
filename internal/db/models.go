@@ -12,7 +12,7 @@ import (
 
 type Identity struct {
 	ID        uuid.UUID
-	Traits    []byte
+	Traits    Traits
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }

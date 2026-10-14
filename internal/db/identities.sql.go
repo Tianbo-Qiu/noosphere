@@ -15,7 +15,7 @@ VALUES ($1)
 RETURNING id, traits, created_at, updated_at
 `
 
-func (q *Queries) CreateIdentity(ctx context.Context, traits []byte) (Identity, error) {
+func (q *Queries) CreateIdentity(ctx context.Context, traits Traits) (Identity, error) {
 	row := q.db.QueryRow(ctx, createIdentity, traits)
 	var i Identity
 	err := row.Scan(
