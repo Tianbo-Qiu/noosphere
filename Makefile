@@ -66,3 +66,17 @@ test: test-migrate
 
 test-v: test-migrate
 	TEST_DATABASE_URL='$(TEST_DB_URL)' go tool ginkgo -r -v --randomize-all $(ARGS)
+
+.PHONY: fmt fmt-check vet check
+
+fmt:
+	go fmt ./...
+
+fmt-check:
+	@out=$$(gofmt -l $$(go list -f '{{.Dir}}' ./...)); \
+	if [ -n "$$out" ]; then echo "not formatted (run make fmt):"; echo "$$out"; exit 1; fi
+
+vet:
+	go vet ./...
+
+check: fmt-check vet test

@@ -12,7 +12,6 @@ import (
 
 const (
 	testEmail          = "test@example.com"
-	testPasswordType   = "password"
 	testPasswordConfig = `{"hashed_password": "test-hash"}`
 )
 
@@ -23,14 +22,14 @@ var _ = Describe("CreateCredential", func() {
 
 		got, err := q.CreateCredential(ctx, CreateCredentialParams{
 			IdentityID: identity.ID,
-			Type:       testPasswordType,
+			Type:       CredentialTypePassword,
 			Config:     json.RawMessage(testPasswordConfig),
 		})
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(got.ID.Version()).To(BeEquivalentTo(7))
 		Expect(got.IdentityID).To(Equal(identity.ID))
-		Expect(got.Type).To(Equal(testPasswordType))
+		Expect(got.Type).To(Equal(CredentialTypePassword))
 		Expect(got.Config).To(MatchJSON(testPasswordConfig))
 	})
 })
@@ -49,7 +48,7 @@ var _ = Describe("CreateCredentialIdentifier", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(got.ID.Version()).To(BeEquivalentTo(7))
 		Expect(got.CredentialID).To(Equal(credential.ID))
-		Expect(got.Type).To(Equal(testPasswordType))
+		Expect(got.Type).To(Equal(CredentialTypePassword))
 		Expect(got.Identifier).To(Equal(testEmail))
 	})
 
@@ -94,7 +93,7 @@ func newTestPasswordCredential(ctx context.Context, q *Queries, email string) Id
 	identity := newTestIdentity(ctx, q, email)
 	credential, err := q.CreateCredential(ctx, CreateCredentialParams{
 		IdentityID: identity.ID,
-		Type:       testPasswordType,
+		Type:       CredentialTypePassword,
 		Config:     json.RawMessage(testPasswordConfig),
 	})
 	Expect(err).NotTo(HaveOccurred())

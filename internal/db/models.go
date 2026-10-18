@@ -21,7 +21,7 @@ type Identity struct {
 type IdentityCredential struct {
 	ID         uuid.UUID
 	IdentityID uuid.UUID
-	Type       string
+	Type       CredentialType
 	Config     json.RawMessage
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
@@ -30,7 +30,7 @@ type IdentityCredential struct {
 type IdentityCredentialIdentifier struct {
 	ID           uuid.UUID
 	CredentialID uuid.UUID
-	Type         string
+	Type         CredentialType
 	Identifier   string
 }
 

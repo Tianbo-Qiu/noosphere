@@ -20,7 +20,7 @@ RETURNING id, identity_id, type, config, created_at, updated_at
 
 type CreateCredentialParams struct {
 	IdentityID uuid.UUID
-	Type       string
+	Type       CredentialType
 	Config     json.RawMessage
 }
 
@@ -46,7 +46,7 @@ RETURNING id, credential_id, type, identifier
 
 type CreateCredentialIdentifierParams struct {
 	CredentialID uuid.UUID
-	Type         string
+	Type         CredentialType
 	Identifier   string
 }
 

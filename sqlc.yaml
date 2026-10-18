@@ -18,3 +18,9 @@ sql:
               type: Traits
           - column: identity_credentials.config
             go_type: encoding/json.RawMessage
+          - column: identity_credentials.type
+            go_type:
+              type: CredentialType
+          - column: identity_credential_identifiers.type
+            go_type:
+              type: CredentialType
