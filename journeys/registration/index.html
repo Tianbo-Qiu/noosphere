@@ -16,7 +16,7 @@
         <link rel="prev" href="../..">
       
       
-        <link rel="next" href="../../standards/precis/">
+        <link rel="next" href="../../design/overview/">
       
       
         
@@ -496,6 +496,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Flow
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#data-model" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -635,6 +646,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -658,7 +675,7 @@
   <span class="md-ellipsis">
     
   
-    Standards
+    Design
   
 
     
@@ -671,6 +688,211 @@
         
         <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Design
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../design/overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../design/database/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Database
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../design/persistence/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Persistence layer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../design/web/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Web
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../design/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Standards
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -882,6 +1104,17 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Flow
+      
+    </span>
+  </a>
   
 </li>
       
@@ -1156,6 +1389,39 @@
 <li>Kratos looks for its own suffix in the list. If the count is above <code>max_breaches</code> (default <code>0</code>), the password is rejected with an error on the <code>password</code> field.</li>
 </ol>
 <p>Hundreds of passwords share each prefix, so HIBP cannot tell which one was checked. This technique is called <a href="https://en.wikipedia.org/wiki/K-anonymity">k-anonymity</a>; Cloudflare <a href="https://blog.cloudflare.com/validating-leaked-passwords-with-k-anonymity/">describes its design for HIBP</a>. SHA-1 is used only because the HIBP dataset is indexed by it; the stored password is hashed separately with <a href="https://en.wikipedia.org/wiki/Bcrypt">bcrypt</a>. If HIBP is unreachable, Kratos accepts the password (<code>ignore_network_errors</code> defaults to <code>true</code>). This is a fail-open choice: an outage does not block sign-ups, but the leak check is skipped.</p>
+<h2 id="flow">Flow<a class="headerlink" href="#flow" title="Permanent link">&para;</a></h2>
+<p>A <strong>registration flow</strong> is one sign-up attempt, stored on the server until it succeeds or expires. It lets the server check that a form post belongs to an attempt it started, that the attempt is still fresh, and what to show next, such as the email typed so far and the errors to fix. A flow holds:</p>
+<ul>
+<li>an <strong>ID</strong>, which appears in the URL and names the attempt;</li>
+<li>a <strong>CSRF token</strong>, which the form must send back;</li>
+<li>its <strong>state</strong>: submitted values (never the password) and errors per field;</li>
+<li>an <strong>expiry time</strong>, after which the flow is rejected and the user starts a new one. The first value is 1 hour.</li>
+</ul>
+<p>Noosphere renders the form itself, so the whole flow takes three requests to one server:</p>
+<table>
+<thead>
+<tr>
+<th>Request</th>
+<th>Does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GET /registration</code></td>
+<td>Creates a flow and redirects to <code>/registration?flow=&lt;id&gt;</code></td>
+</tr>
+<tr>
+<td><code>GET /registration?flow=&lt;id&gt;</code></td>
+<td>Loads the flow and renders the form from it</td>
+</tr>
+<tr>
+<td><code>POST /registration?flow=&lt;id&gt;</code></td>
+<td>Checks the flow and CSRF token, then creates the account and logs the user in, or saves the errors into the flow and redirects back to the form</td>
+</tr>
+</tbody>
+</table>
+<p>The redirect after creating a flow puts the flow ID in the URL, so a refresh or the back button shows the same attempt instead of starting a new one. Every form post is also answered with a redirect (<a href="https://en.wikipedia.org/wiki/Post/Redirect/Get">Post/Redirect/Get</a>), so a refresh never submits the form twice.</p>
+<p>The CSRF token alone is not enough, because an attacker can start a flow of their own and copy its token into a forged form. The token must also be tied to the browser with a cookie, as in the <a href="#csrf">CSRF</a> note above.</p>
 <h2 id="data-model">Data model<a class="headerlink" href="#data-model" title="Permanent link">&para;</a></h2>
 <h3 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h3>
 <p>Five tables in three groups:</p>
@@ -1345,7 +1611,7 @@
 <li><strong><code>FOREIGN KEY (credential_id, type) → identity_credentials (id, type)</code>, cascade delete.</strong> The identifier must point at a real credential of the same method. An identifier with credential <code>01a12be9-a599-74c7-b7e6-70439cada89d</code> and type <code>oidc</code> is rejected, because that credential's type is <code>password</code>. Deleting the credential deletes its identifier, so the email can be used to sign up again.</li>
 </ul>
 <p><code>type</code> is copied into this table because a <a href="https://www.postgresql.org/docs/18/ddl-constraints.html#DDL-CONSTRAINTS-UNIQUE-CONSTRAINTS">unique constraint</a> can only cover columns of one table. The composite <a href="https://www.postgresql.org/docs/18/ddl-constraints.html#DDL-CONSTRAINTS-FK">foreign key</a> is what keeps the copy honest.</p>
-<p>Normalization happens before insert, and the rule depends on the method. For password login, emails are trimmed and lowercased, so <code>Ada@Example.com</code> is stored as <code>ada@example.com</code> and <code>ADA@example.com</code> hits the unique constraint. A social sign-in subject ID is case-sensitive and kept as is.</p>
+<p>Normalization happens before insert, and the rule depends on the method. For password login, emails are trimmed and then normalized with <a href="../../standards/precis/">PRECIS</a>, which lowercases them, maps fullwidth letters and rejects invisible characters. So <code>Ada@Example.com</code> is stored as <code>ada@example.com</code>, and <code>ADA@example.com</code> hits the unique constraint. A <code>CHECK</code> constraint rejects any identifier that is not already lowercase, trimmed, in <a href="../../standards/unicode-normalization/">NFC</a> form and non-empty, in case some code path skips normalization. A social sign-in subject ID is case-sensitive and kept as is.</p>
 <h4 id="sessions">sessions<a class="headerlink" href="#sessions" title="Permanent link">&para;</a></h4>
 <p>One row per logged-in device. Logging out one device does not touch the others.</p>
 <table>
@@ -1620,13 +1886,13 @@
         
         
           
-          <a href="../../standards/precis/" class="md-footer__link md-footer__link--next" aria-label="Next: PRECIS">
+          <a href="../../design/overview/" class="md-footer__link md-footer__link--next" aria-label="Next: Overview">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                PRECIS
+                Overview
               </div>
             </div>
             <div class="md-footer__button md-icon">
