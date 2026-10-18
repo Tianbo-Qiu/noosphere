@@ -4,19 +4,29 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 
+	"github.com/Tianbo-Qiu/noosphere/internal/identifier"
 	"github.com/jackc/pgx/v5"
 )
 
 const identifierUniqueConstraint = "identity_credential_identifiers_type_identifier_key"
 
-var ErrIdentifierTaken = errors.New("identifier already taken")
+var (
+	ErrIdentifierTaken   = errors.New("identifier already taken")
+	ErrInvalidIdentifier = errors.New("invalid identifier")
+)
 
 type Beginner interface {
 	Begin(ctx context.Context) (pgx.Tx, error)
 }
 
-func CreatePasswordIdentity(ctx context.Context, db Beginner, traits Traits, identifier string, config PasswordConfig) (Identity, error) {
+func CreatePasswordIdentity(ctx context.Context, db Beginner, traits Traits, rawIdentifier string, config PasswordConfig) (Identity, error) {
+	normalized, err := identifier.Normalize(rawIdentifier)
+	if err != nil {
+		return Identity{}, fmt.Errorf("%w: %w", ErrInvalidIdentifier, err)
+	}
+
 	configJSON, err := json.Marshal(config)
 	if err != nil {
 		return Identity{}, err
@@ -46,7 +56,7 @@ func CreatePasswordIdentity(ctx context.Context, db Beginner, traits Traits, ide
 	_, err = q.CreateCredentialIdentifier(ctx, CreateCredentialIdentifierParams{
 		CredentialID: credential.ID,
 		Type:         CredentialTypePassword,
-		Identifier:   identifier,
+		Identifier:   normalized,
 	})
 	if err != nil {
 		if isConstraintViolation(err, uniqueViolation, identifierUniqueConstraint) {

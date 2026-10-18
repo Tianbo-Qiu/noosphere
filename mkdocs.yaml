@@ -97,4 +97,7 @@ nav:
   - Home: index.md
   - Journeys:
       - Registration: journeys/registration.md
+  - Standards:
+      - PRECIS: standards/precis.md
+      - Unicode normalization: standards/unicode-normalization.md
   - Test: test.md

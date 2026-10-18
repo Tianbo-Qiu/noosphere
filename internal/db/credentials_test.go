@@ -10,59 +10,53 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-const (
-	testEmail          = "test@example.com"
-	testHashedPassword = "test-hash"
-	testPasswordConfig = `{"hashed_password": "test-hash"}`
-)
-
 var _ = Describe("CreateCredential", func() {
 	It("stores a password credential for the identity", func(ctx SpecContext) {
 		q := New(testTx(ctx))
-		identity := newTestIdentity(ctx, q, testEmail)
+		identity := newTestIdentity(ctx, q, "test@example.com")
 
 		got, err := q.CreateCredential(ctx, CreateCredentialParams{
 			IdentityID: identity.ID,
 			Type:       CredentialTypePassword,
-			Config:     json.RawMessage(testPasswordConfig),
+			Config:     json.RawMessage(`{"hashed_password": "test-hash"}`),
 		})
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(got.ID.Version()).To(BeEquivalentTo(7))
 		Expect(got.IdentityID).To(Equal(identity.ID))
 		Expect(got.Type).To(Equal(CredentialTypePassword))
-		Expect(got.Config).To(MatchJSON(testPasswordConfig))
+		Expect(got.Config).To(MatchJSON(`{"hashed_password": "test-hash"}`))
 	})
 })
 
 var _ = Describe("CreateCredentialIdentifier", func() {
 	It("stores the identifier for the credential", func(ctx SpecContext) {
 		q := New(testTx(ctx))
-		credential := newTestPasswordCredential(ctx, q, testEmail)
+		credential := newTestPasswordCredential(ctx, q, "test@example.com")
 
 		got, err := q.CreateCredentialIdentifier(ctx, CreateCredentialIdentifierParams{
 			CredentialID: credential.ID,
 			Type:         credential.Type,
-			Identifier:   testEmail,
+			Identifier:   "test@example.com",
 		})
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(got.ID.Version()).To(BeEquivalentTo(7))
 		Expect(got.CredentialID).To(Equal(credential.ID))
 		Expect(got.Type).To(Equal(CredentialTypePassword))
-		Expect(got.Identifier).To(Equal(testEmail))
+		Expect(got.Identifier).To(Equal("test@example.com"))
 	})
 
 	It("rejects an identifier already used by another credential of the same type", func(ctx SpecContext) {
 		q := New(testTx(ctx))
-		first := newTestPasswordCredential(ctx, q, testEmail)
-		second := newTestPasswordCredential(ctx, q, testEmail)
-		newTestCredentialIdentifier(ctx, q, first, testEmail)
+		first := newTestPasswordCredential(ctx, q, "test@example.com")
+		second := newTestPasswordCredential(ctx, q, "test@example.com")
+		newTestCredentialIdentifier(ctx, q, first, "test@example.com")
 
 		_, err := q.CreateCredentialIdentifier(ctx, CreateCredentialIdentifierParams{
 			CredentialID: second.ID,
 			Type:         second.Type,
-			Identifier:   testEmail,
+			Identifier:   "test@example.com",
 		})
 
 		expectPgError(err, uniqueViolation, "identity_credential_identifiers_type_identifier_key")
@@ -70,16 +64,36 @@ var _ = Describe("CreateCredentialIdentifier", func() {
 
 	It("rejects an identifier whose type differs from its credential's", func(ctx SpecContext) {
 		q := New(testTx(ctx))
-		credential := newTestPasswordCredential(ctx, q, testEmail)
+		credential := newTestPasswordCredential(ctx, q, "test@example.com")
 
 		_, err := q.CreateCredentialIdentifier(ctx, CreateCredentialIdentifierParams{
 			CredentialID: credential.ID,
 			Type:         "code",
-			Identifier:   testEmail,
+			Identifier:   "test@example.com",
 		})
 
 		expectPgError(err, foreignKeyViolation, "identity_credential_identifiers_credential_id_type_fkey")
 	})
+
+	DescribeTable("rejects an identifier that is not normalized",
+		func(ctx SpecContext, identifier string) {
+			q := New(testTx(ctx))
+			credential := newTestPasswordCredential(ctx, q, "test@example.com")
+
+			_, err := q.CreateCredentialIdentifier(ctx, CreateCredentialIdentifierParams{
+				CredentialID: credential.ID,
+				Type:         credential.Type,
+				Identifier:   identifier,
+			})
+
+			expectPgError(err, checkViolation, "identity_credential_identifiers_identifier_normalized")
+		},
+		Entry("uppercase", "Test@Example.com"),
+		Entry("leading space", " test@example.com"),
+		Entry("trailing space", "test@example.com "),
+		Entry("decomposed é", "cafe\u0301@example.com"), // e + combining acute (2 code points)
+		Entry("empty", ""),
+	)
 })
 
 func newTestIdentity(ctx context.Context, q *Queries, email string) Identity {
@@ -95,7 +109,7 @@ func newTestPasswordCredential(ctx context.Context, q *Queries, email string) Id
 	credential, err := q.CreateCredential(ctx, CreateCredentialParams{
 		IdentityID: identity.ID,
 		Type:       CredentialTypePassword,
-		Config:     json.RawMessage(testPasswordConfig),
+		Config:     json.RawMessage(`{"hashed_password": "test-hash"}`),
 	})
 	Expect(err).NotTo(HaveOccurred())
 	return credential

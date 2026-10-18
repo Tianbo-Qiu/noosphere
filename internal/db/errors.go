@@ -13,6 +13,8 @@ const (
 	foreignKeyViolation = "23503"
 	// uniqueViolation: the write duplicates a value in a unique constraint.
 	uniqueViolation = "23505"
+	// checkViolation: the write breaks a CHECK constraint
+	checkViolation = "23514"
 )
 
 func isConstraintViolation(err error, code, constraint string) bool {
