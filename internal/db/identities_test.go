@@ -1,29 +1,21 @@
 package db
 
-import "testing"
+import (
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+)
 
-func TestCreateIdentity(t *testing.T) {
-	q := New(testTx(t))
+var _ = Describe("CreateIdentity", func() {
+	It("stores the traits and generates a UUID v7", func(ctx SpecContext) {
+		q := New(testTx(ctx))
+		traits := Traits{Email: "test@example.com", FirstName: "Test", LastName: "User"}
 
-	traits := Traits{
-		Email:     "test@test.com",
-		FirstName: "Test1",
-		LastName:  "Test",
-	}
-	got, err := q.CreateIdentity(t.Context(), traits)
-	if err != nil {
-		t.Fatalf("CreateIdentity: %v", err)
-	}
-	if got.ID.Version() != 7 {
-		t.Errorf("ID version = %d, want 7", got.ID.Version())
-	}
-	if got.Traits != traits {
-		t.Errorf("Traits = %+v, want %+v", got.Traits, traits)
-	}
-	if got.CreatedAt.IsZero() {
-		t.Error("CreatedAt is zero")
-	}
-	if got.UpdatedAt.IsZero() {
-		t.Error("UpdatedAt is zero")
-	}
-}
+		got, err := q.CreateIdentity(ctx, traits)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(got.ID.Version()).To(BeEquivalentTo(7))
+		Expect(got.Traits).To(Equal(traits))
+		Expect(got.CreatedAt).NotTo(BeZero())
+		Expect(got.UpdatedAt).NotTo(BeZero())
+	})
+})

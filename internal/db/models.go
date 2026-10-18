@@ -5,6 +5,7 @@
 package db
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/google/uuid"
@@ -21,7 +22,7 @@ type IdentityCredential struct {
 	ID         uuid.UUID
 	IdentityID uuid.UUID
 	Type       string
-	Config     []byte
+	Config     json.RawMessage
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
 }

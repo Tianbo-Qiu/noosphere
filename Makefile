@@ -41,10 +41,10 @@ migrate-up:
 	GOOSE_DBSTRING='$(DB_URL)' $(GOOSE) up
 
 migrate-down:
-	GOOSE_DBSTRING='$(DB_URL)'$(GOOSE) down
+	GOOSE_DBSTRING='$(DB_URL)' $(GOOSE) down
 
 migrate-status:
-	GOOSE_DBSTRING='$(DB_URL)'$(GOOSE) status
+	GOOSE_DBSTRING='$(DB_URL)' $(GOOSE) status
 
 .PHONY: generate
 
@@ -56,8 +56,13 @@ generate:
 run:
 	DATABASE_URL='$(DB_URL)' go run ./cmd/noosphere
 
-.PHONY: test
+.PHONY: test test-v test-migrate
 
-test:
+test-migrate:
 	GOOSE_DBSTRING='$(TEST_DB_URL)' $(GOOSE) up
+
+test: test-migrate
 	TEST_DATABASE_URL='$(TEST_DB_URL)' go test -count=1 ./...
+
+test-v: test-migrate
+	TEST_DATABASE_URL='$(TEST_DB_URL)' go tool ginkgo -r -v --randomize-all $(ARGS)
