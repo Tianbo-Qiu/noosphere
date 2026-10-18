@@ -12,6 +12,7 @@ import (
 
 const (
 	testEmail          = "test@example.com"
+	testHashedPassword = "test-hash"
 	testPasswordConfig = `{"hashed_password": "test-hash"}`
 )
 
