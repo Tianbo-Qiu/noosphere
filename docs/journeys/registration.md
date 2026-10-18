@@ -151,6 +151,27 @@ This runs on the password submit (step 8), after the length check (at least 8 ch
 
 Hundreds of passwords share each prefix, so HIBP cannot tell which one was checked. This technique is called [k-anonymity](https://en.wikipedia.org/wiki/K-anonymity); Cloudflare [describes its design for HIBP](https://blog.cloudflare.com/validating-leaked-passwords-with-k-anonymity/). SHA-1 is used only because the HIBP dataset is indexed by it; the stored password is hashed separately with [bcrypt](https://en.wikipedia.org/wiki/Bcrypt). If HIBP is unreachable, Kratos accepts the password (`ignore_network_errors` defaults to `true`). This is a fail-open choice: an outage does not block sign-ups, but the leak check is skipped.
 
+## Flow
+
+A **registration flow** is one sign-up attempt, stored on the server until it succeeds or expires. It lets the server check that a form post belongs to an attempt it started, that the attempt is still fresh, and what to show next, such as the email typed so far and the errors to fix. A flow holds:
+
+- an **ID**, which appears in the URL and names the attempt;
+- a **CSRF token**, which the form must send back;
+- its **state**: submitted values (never the password) and errors per field;
+- an **expiry time**, after which the flow is rejected and the user starts a new one. The first value is 1 hour.
+
+Noosphere renders the form itself, so the whole flow takes three requests to one server:
+
+| Request | Does |
+|---|---|
+| `GET /registration` | Creates a flow and redirects to `/registration?flow=<id>` |
+| `GET /registration?flow=<id>` | Loads the flow and renders the form from it |
+| `POST /registration?flow=<id>` | Checks the flow and CSRF token, then creates the account and logs the user in, or saves the errors into the flow and redirects back to the form |
+
+The redirect after creating a flow puts the flow ID in the URL, so a refresh or the back button shows the same attempt instead of starting a new one. Every form post is also answered with a redirect ([Post/Redirect/Get](https://en.wikipedia.org/wiki/Post/Redirect/Get)), so a refresh never submits the form twice.
+
+The CSRF token alone is not enough, because an attacker can start a flow of their own and copy its token into a forged form. The token must also be tied to the browser with a cookie, as in the [CSRF](#csrf) note above.
+
 ## Data model
 
 ### Overview
@@ -250,7 +271,7 @@ Constraints:
 
 `type` is copied into this table because a [unique constraint](https://www.postgresql.org/docs/18/ddl-constraints.html#DDL-CONSTRAINTS-UNIQUE-CONSTRAINTS) can only cover columns of one table. The composite [foreign key](https://www.postgresql.org/docs/18/ddl-constraints.html#DDL-CONSTRAINTS-FK) is what keeps the copy honest.
 
-Normalization happens before insert, and the rule depends on the method. For password login, emails are trimmed and lowercased, so `Ada@Example.com` is stored as `ada@example.com` and `ADA@example.com` hits the unique constraint. A social sign-in subject ID is case-sensitive and kept as is.
+Normalization happens before insert, and the rule depends on the method. For password login, emails are trimmed and then normalized with [PRECIS](../standards/precis.md), which lowercases them, maps fullwidth letters and rejects invisible characters. So `Ada@Example.com` is stored as `ada@example.com`, and `ADA@example.com` hits the unique constraint. A `CHECK` constraint rejects any identifier that is not already lowercase, trimmed, in [NFC](../standards/unicode-normalization.md) form and non-empty, in case some code path skips normalization. A social sign-in subject ID is case-sensitive and kept as is.
 
 #### sessions
 

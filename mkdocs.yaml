@@ -97,6 +97,12 @@ nav:
   - Home: index.md
   - Journeys:
       - Registration: journeys/registration.md
+  - Design:
+      - Overview: design/overview.md
+      - Database: design/database.md
+      - Persistence layer: design/persistence.md
+      - Web: design/web.md
+      - Testing: design/testing.md
   - Standards:
       - PRECIS: standards/precis.md
       - Unicode normalization: standards/unicode-normalization.md

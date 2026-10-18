@@ -1,0 +1,30 @@
+# Testing
+
+Tests run against a real Postgres database, and each test layer proves a different thing.
+
+## Layers
+
+| Layer | Tests | Example |
+|---|---|---|
+| Unit | Pure functions, no database or network | `identifier.Normalize` maps `Test@Example.com` to `test@example.com` |
+| Database | Queries, transactions and constraints against real Postgres | a second sign-up with the same email returns `ErrIdentifierTaken` |
+| HTTP | Handlers through real requests with [`httptest`](https://pkg.go.dev/net/http/httptest) and a cookie jar | `POST /registration` sets a session cookie and redirects |
+| End-to-end | The built server, driven like a user would | sign up, then log in |
+
+The database is never mocked. Constraints, transactions and error codes are exactly the behavior worth testing, and a mock would only repeat what the test author already assumed.
+
+## Isolation
+
+Tests use their own database, `noosphere_test`, created when the database container is first set up. `make test` applies all migrations to it before running the tests. If `TEST_DATABASE_URL` is not set, the database tests are skipped.
+
+Each database test runs inside a transaction that is rolled back when the test ends, so tests never see each other's rows and leave nothing behind. Code under test that opens its own transaction gets a savepoint inside the test's transaction.
+
+Some tests will need data that is really committed, for example two concurrent sign-ups with the same email. Those will get a fresh database per test, copied from a migrated template database; creating such a copy took about 12 ms locally.
+
+## Ginkgo and Gomega
+
+Specs are written with [Ginkgo](https://onsi.github.io/ginkgo/) and [Gomega](https://onsi.github.io/gomega/), because nested `Describe` and `It` blocks read as statements of behavior. Each package has one standard Go test function that starts its suite, so `go test` and editors run the specs like any other tests.
+
+Spec names state the rule they prove, scoped exactly as the code or schema scopes it, for example "rejects an identifier already used by another credential of the same type". Test data is written inline and obviously fake (`test@example.com`, `"test-hash"`), and the cases are the ones a person would worry about: a different case, surrounding spaces, fullwidth letters, a decomposed `é`, an invisible character.
+
+`make test` runs all tests with `go test`. `make test-v` runs them through the Ginkgo runner in random order, printing every spec, and accepts extra flags such as `ARGS='--focus CreatePasswordIdentity'`.
