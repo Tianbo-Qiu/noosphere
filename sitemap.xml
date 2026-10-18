@@ -2,14 +2,22 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://tianbo-qiu.github.io/noosphere/</loc>
-         <lastmod>2026-10-13</lastmod>
+         <lastmod>2026-10-18</lastmod>
     </url>
     <url>
          <loc>https://tianbo-qiu.github.io/noosphere/test/</loc>
-         <lastmod>2026-10-13</lastmod>
+         <lastmod>2026-10-18</lastmod>
     </url>
     <url>
          <loc>https://tianbo-qiu.github.io/noosphere/journeys/registration/</loc>
-         <lastmod>2026-10-13</lastmod>
+         <lastmod>2026-10-18</lastmod>
+    </url>
+    <url>
+         <loc>https://tianbo-qiu.github.io/noosphere/standards/precis/</loc>
+         <lastmod>2026-10-18</lastmod>
+    </url>
+    <url>
+         <loc>https://tianbo-qiu.github.io/noosphere/standards/unicode-normalization/</loc>
+         <lastmod>2026-10-18</lastmod>
     </url>
 </urlset>
