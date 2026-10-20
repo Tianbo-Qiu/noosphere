@@ -54,7 +54,7 @@ generate:
 .PHONY: run
 
 run:
-	DATABASE_URL='$(DB_URL)' go run ./cmd/noosphere
+	DATABASE_URL='$(DB_URL)' COOKIE_SECURE=false go run ./cmd/noosphere
 
 .PHONY: test test-v test-migrate
 
