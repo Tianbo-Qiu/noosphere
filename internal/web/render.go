@@ -10,6 +10,9 @@ import (
 //go:embed templates
 var templateFS embed.FS
 
+//go:embed static
+var staticFS embed.FS
+
 var pageNames = []string{"registration", "error"}
 
 func parsePages() (map[string]*template.Template, error) {

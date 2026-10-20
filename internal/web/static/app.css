@@ -1,0 +1,11 @@
+/* Noosphere's adjustments on top of Pico. */
+
+/* Keep the normal text size instead of growing with the screen. */
+:root {
+  --pico-font-size: 100%;
+}
+
+/* Forms read best in a narrow column. */
+body > main {
+  max-width: 28rem;
+}

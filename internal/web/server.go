@@ -45,6 +45,7 @@ func (s *Server) requestLogger(r *http.Request) *slog.Logger {
 func (s *Server) Handler() http.Handler {
 	r := chi.NewRouter()
 	r.Use(withRequestID)
+	r.Handle("/static/*", http.FileServerFS(staticFS))
 	r.Get("/registration", s.getRegistration)
 	return r
 }
