@@ -121,7 +121,7 @@ var _ = Describe("GET /registration", func() {
 	})
 
 	Context("from a browser that does not keep cookies", func() {
-		It("shows the cookie-required page with 403 instead of redirecting again", func(ctx SpecContext) {
+		It("shows the cookies-required page with 403 instead of redirecting again", func(ctx SpecContext) {
 			ts := newTestServer(ctx)
 			browser := newBrowserWithoutCookies()
 			start := get(browser, ts.URL+"/registration")
@@ -129,7 +129,7 @@ var _ = Describe("GET /registration", func() {
 			resp := get(browser, ts.URL+start.Header.Get("Location"))
 
 			Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
-			Expect(body(resp)).To(ContainSubstring("<h1>Cookie required</h1>"))
+			Expect(body(resp)).To(ContainSubstring("<h1>Cookies required</h1>"))
 		})
 	})
 })

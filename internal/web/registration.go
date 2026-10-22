@@ -53,7 +53,7 @@ func (s *Server) getRegistration(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Warn("registration flow requested without csrf cookie", "flow_id", flow.ID)
 		s.render(w, http.StatusForbidden, "error", errorPage{
-			Title:   "Cookie required",
+			Title:   "Cookies required",
 			Message: "Your browser did not send back the security cookie. Allow cookies for this site and start again.",
 		})
 		return
