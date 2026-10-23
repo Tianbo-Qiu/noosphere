@@ -538,6 +538,28 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Settings
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#logging" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Logging
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -679,6 +701,8 @@
       
         
       
+        
+      
     
     
     
@@ -767,6 +791,34 @@
     
   
     Unicode normalization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../standards/password-hashing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Password hashing
   
 
     
@@ -873,6 +925,28 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Settings
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#logging" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Logging
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -930,24 +1004,43 @@
 <td><a href="https://github.com/jackc/pgx">pgx</a> with its connection pool</td>
 </tr>
 <tr>
+<td>HTTP routing</td>
+<td><a href="https://github.com/go-chi/chi">chi</a>, on top of the standard <code>net/http</code> handlers</td>
+</tr>
+<tr>
 <td>Pages</td>
 <td>Server-rendered with <code>html/template</code> (see <a href="../web/">Web</a>)</td>
+</tr>
+<tr>
+<td>Password hashing</td>
+<td>Argon2id from <a href="https://pkg.go.dev/golang.org/x/crypto/argon2"><code>golang.org/x/crypto/argon2</code></a> (see <a href="../../standards/password-hashing/">Password hashing</a>)</td>
+</tr>
+<tr>
+<td>Logging</td>
+<td><a href="https://pkg.go.dev/log/slog"><code>log/slog</code></a> from the standard library</td>
 </tr>
 <tr>
 <td>Tests</td>
 <td><a href="https://onsi.github.io/ginkgo/">Ginkgo</a> and <a href="https://onsi.github.io/gomega/">Gomega</a> (see <a href="../testing/">Testing</a>)</td>
 </tr>
+<tr>
+<td>CI</td>
+<td>GitHub Actions: <code>make check</code> against a Postgres 18 service on every push and pull request</td>
+</tr>
 </tbody>
 </table>
 <h2 id="layout">Layout<a class="headerlink" href="#layout" title="Permanent link">&para;</a></h2>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>cmd/noosphere/          the server binary
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>internal/db/            storage: generated query code plus hand-written transactions
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>internal/identifier/    normalization of login identifiers such as emails
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>db/migrations/          schema changes, applied in order
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>db/queries/             the SQL that sqlc turns into Go
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>db/init/                one-time setup for a new database container (creates the test database)
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>cmd/noosphere/          the server binary: reads settings, builds the logger, the database pool and the web server
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>internal/web/           HTTP: routes, middleware, handlers, templates and static files
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>internal/db/            storage: generated query code plus hand-written transactions
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>internal/identifier/    normalization of login identifiers such as emails
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>internal/password/      password hashing
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>internal/logging/       builds the logger from its format and level
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>db/migrations/          schema changes, applied in order
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>db/queries/             the SQL that sqlc turns into Go
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>db/init/                one-time setup for a new database container (creates the test database)
 </span></code></pre></div>
-<p>Each package has one job. Code outside <code>internal/db</code> never writes SQL and never sees a Postgres error code: <code>internal/db</code> turns those into plain Go errors such as <code>ErrIdentifierTaken</code>.</p>
+<p>Each package has one job, and only <code>cmd/noosphere</code> reads environment variables; the other packages receive their settings as arguments. Code outside <code>internal/db</code> never writes SQL and never sees a Postgres error code: <code>internal/db</code> turns those into plain Go errors such as <code>ErrIdentifierTaken</code>.</p>
 <h2 id="everyday-commands">Everyday commands<a class="headerlink" href="#everyday-commands" title="Permanent link">&para;</a></h2>
 <p>The Makefile wraps the common tasks:</p>
 <table>
@@ -972,11 +1065,15 @@
 </tr>
 <tr>
 <td><code>make run</code></td>
-<td>Runs the server against the development database</td>
+<td>Runs the server on <code>http://localhost:8080</code> against the development database</td>
 </tr>
 <tr>
 <td><code>make test</code></td>
 <td>Migrates the test database, then runs all tests</td>
+</tr>
+<tr>
+<td><code>make test-v</code></td>
+<td>The same tests through the Ginkgo runner, in random order, printing every spec; extra flags go in <code>ARGS</code></td>
 </tr>
 <tr>
 <td><code>make check</code></td>
@@ -984,6 +1081,51 @@
 </tr>
 </tbody>
 </table>
+<h2 id="settings">Settings<a class="headerlink" href="#settings" title="Permanent link">&para;</a></h2>
+<p>The server reads its settings from environment variables at startup and stops if one is invalid.</p>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>DATABASE_URL</code></td>
+<td>none, required</td>
+<td>Postgres connection string</td>
+</tr>
+<tr>
+<td><code>ADDR</code></td>
+<td><code>:8080</code></td>
+<td>Address the server listens on</td>
+</tr>
+<tr>
+<td><code>COOKIE_SECURE</code></td>
+<td><code>true</code></td>
+<td>Mark cookies <code>Secure</code> (HTTPS only); <code>make run</code> sets <code>false</code> for local HTTP</td>
+</tr>
+<tr>
+<td><code>LOG_FORMAT</code></td>
+<td><code>text</code></td>
+<td><code>text</code> or <code>json</code></td>
+</tr>
+<tr>
+<td><code>LOG_LEVEL</code></td>
+<td><code>info</code></td>
+<td><code>debug</code>, <code>info</code>, <code>warn</code> or <code>error</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="logging">Logging<a class="headerlink" href="#logging" title="Permanent link">&para;</a></h2>
+<p>Every component gets the logger from <code>main</code> instead of using a global one. Log lines are structured: a short message plus key/value pairs, such as <code>flow_id</code>. <code>go vet</code> rejects a key without a value.</p>
+<p>Each HTTP request gets a random <code>request_id</code>, stored in its context, returned in the <code>X-Request-ID</code> response header, and included in every line the request logs. After the handler finishes, the access log writes one <code>request</code> line with the method, path, status and duration:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>level=INFO msg="registration flow created" request_id=B73V2TUNDMX76PUNOT6AAGWSKY flow_id=01a15cb4-e13c-700a-aad5-2de34f8a9038
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>level=INFO msg=request request_id=B73V2TUNDMX76PUNOT6AAGWSKY method=GET path=/registration status=303 duration=6.45475ms
+</span></code></pre></div>
+<p>A sign-up attempt spans several requests, so it is followed by its <code>flow_id</code>. Secrets (CSRF tokens, passwords, connection strings) and email addresses are never logged, and the access log records the path without the query string.</p>
 
 
 

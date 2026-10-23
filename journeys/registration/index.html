@@ -857,6 +857,8 @@
       
         
       
+        
+      
     
     
     
@@ -945,6 +947,34 @@
     
   
     Unicode normalization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../standards/password-hashing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Password hashing
   
 
     
@@ -1274,7 +1304,7 @@
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">  </span><span class="nt">"state"</span><span class="p">:</span><span class="w"> </span><span class="s2">"choose_method"</span><span class="p">,</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">  </span><span class="nt">"expires_at"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2026-10-12T01:10:49Z"</span><span class="p">,</span>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">  </span><span class="nt">"ui"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">    </span><span class="nt">"action"</span><span class="p">:</span><span class="w"> </span><span class="s2">"http://127.0.0.1:4433/self-service/registration?flow=faaa3fc0-…"</span><span class="p">,</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">    </span><span class="nt">"action"</span><span class="p">:</span><span class="w"> </span><span class="s2">"http://127.0.0.1:4433/self-service/registration?flow=faaa3fc0-0203-4085-ac76-3b6ca668908a"</span><span class="p">,</span>
 </span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">    </span><span class="nt">"method"</span><span class="p">:</span><span class="w"> </span><span class="s2">"POST"</span><span class="p">,</span>
 </span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">    </span><span class="nt">"nodes"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 </span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">      </span><span class="p">{</span><span class="w"> </span><span class="nt">"attributes"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"csrf_token"</span><span class="p">,</span><span class="w"> </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"hidden"</span><span class="p">,</span><span class="w"> </span><span class="nt">"value"</span><span class="p">:</span><span class="w"> </span><span class="s2">"&lt;token&gt;"</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">},</span>
@@ -1421,7 +1451,7 @@
 </tbody>
 </table>
 <p>The redirect after creating a flow puts the flow ID in the URL, so a refresh or the back button shows the same attempt instead of starting a new one. Every form post is also answered with a redirect (<a href="https://en.wikipedia.org/wiki/Post/Redirect/Get">Post/Redirect/Get</a>), so a refresh never submits the form twice.</p>
-<p>The CSRF token alone is not enough, because an attacker can start a flow of their own and copy its token into a forged form. The token must also be tied to the browser with a cookie, as in the <a href="#csrf">CSRF</a> note above.</p>
+<p>The CSRF token alone is not enough, because an attacker can start a flow of their own and copy its token into a forged form. The token must also be tied to the browser with a cookie, as in the <a href="#csrf">CSRF</a> note above. A flow is shown only to the browser whose cookie matches it; another browser is given a flow of its own. A browser that does not send the cookie back at all gets a <code>403</code> page asking it to allow cookies, instead of a new flow on every request.</p>
 <h2 id="data-model">Data model<a class="headerlink" href="#data-model" title="Permanent link">&para;</a></h2>
 <h3 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h3>
 <p>Five tables in three groups:</p>
@@ -1541,7 +1571,7 @@
 <td><code>01a12be9-a599-74c7-b7e6-70439cada89d</code></td>
 <td><code>01a12be9-a598-707b-a6a3-1f96331092cc</code></td>
 <td><code>password</code></td>
-<td><code>{"hashed_password": "$argon2id$v=19$m=65536,t=3,p=4$…"}</code></td>
+<td><code>{"hashed_password": "$argon2id$v=19$m=19456,t=2,p=1$9AJst65TcxJXHOvNhnFTHg$/OCLUBfIRQJW1kwtkUYp5oMjgSlILZh6aisfi3VihaM"}</code></td>
 </tr>
 </tbody>
 </table>
@@ -1552,7 +1582,7 @@
 <li><strong><code>UNIQUE (identity_id, type)</code>.</strong> At most one credential per method. A second <code>password</code> row for identity <code>01a12be9-a598-707b-a6a3-1f96331092cc</code> is rejected; otherwise login would not know which of Ada's two hashes to check.</li>
 <li><strong><code>UNIQUE (id, type)</code>.</strong> Needed only for the foreign key from <code>identity_credential_identifiers</code>. Postgres requires a foreign key to point at columns with a unique constraint.</li>
 </ul>
-<p>The password hash is stored in <a href="https://github.com/P-H-C/phc-string-format/blob/master/phc-sf-spec.md">PHC string format</a>. The algorithm and its parameters travel with the hash, so they can be raised later and old hashes upgraded at the next login. <a href="https://en.wikipedia.org/wiki/Argon2">Argon2id</a> is the first choice in the <a href="https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html">OWASP Password Storage Cheat Sheet</a>.</p>
+<p>The password hash is stored in <a href="https://github.com/P-H-C/phc-string-format/blob/master/phc-sf-spec.md">PHC string format</a>. The algorithm and its parameters travel with the hash, so they can be raised later and old hashes upgraded at the next login. <a href="../../standards/password-hashing/">Argon2id</a> is the first choice in the <a href="https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html">OWASP Password Storage Cheat Sheet</a>. Noosphere uses the cheat sheet's minimum configuration (19 MiB of memory, 2 iterations, 1 degree of parallelism) with a 16-byte random salt per password. Before hashing, the password is normalized with the PRECIS OpaqueString profile (<a href="../../standards/precis/">PRECIS</a>), so the same password typed with a different kind of space or a decomposed accent still matches; case and width are kept, so <code>Secret</code> and <code>secret</code> stay different passwords.</p>
 <h4 id="identity_credential_identifiers">identity_credential_identifiers<a class="headerlink" href="#identity_credential_identifiers" title="Permanent link">&para;</a></h4>
 <p>What the user types to find a credential at login, such as their email. The credential is the lock; the identifier says which lock to try. It is a separate table because one credential can have several identifiers, for example a password usable with either an email or a username.</p>
 <table>
@@ -1781,7 +1811,7 @@
 <td><code>01a12be9-a599-74c7-b7e6-70439cada89d</code></td>
 <td><code>01a12be9-a598-707b-a6a3-1f96331092cc</code></td>
 <td><code>password</code></td>
-<td><code>{"hashed_password": "$argon2id$v=19$m=65536,t=3,p=4$…"}</code></td>
+<td><code>{"hashed_password": "$argon2id$v=19$m=19456,t=2,p=1$9AJst65TcxJXHOvNhnFTHg$/OCLUBfIRQJW1kwtkUYp5oMjgSlILZh6aisfi3VihaM"}</code></td>
 </tr>
 </tbody>
 </table>
