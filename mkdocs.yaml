@@ -106,4 +106,5 @@ nav:
   - Standards:
       - PRECIS: standards/precis.md
       - Unicode normalization: standards/unicode-normalization.md
+      - Password hashing: standards/password-hashing.md
   - Test: test.md

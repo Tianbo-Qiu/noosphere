@@ -21,7 +21,7 @@
       "state": "choose_method",
       "expires_at": "2026-10-12T01:10:49Z",
       "ui": {
-        "action": "http://127.0.0.1:4433/self-service/registration?flow=faaa3fc0-…",
+        "action": "http://127.0.0.1:4433/self-service/registration?flow=faaa3fc0-0203-4085-ac76-3b6ca668908a",
         "method": "POST",
         "nodes": [
           { "attributes": { "name": "csrf_token", "type": "hidden", "value": "<token>" } },
@@ -170,7 +170,7 @@ Noosphere renders the form itself, so the whole flow takes three requests to one
 
 The redirect after creating a flow puts the flow ID in the URL, so a refresh or the back button shows the same attempt instead of starting a new one. Every form post is also answered with a redirect ([Post/Redirect/Get](https://en.wikipedia.org/wiki/Post/Redirect/Get)), so a refresh never submits the form twice.
 
-The CSRF token alone is not enough, because an attacker can start a flow of their own and copy its token into a forged form. The token must also be tied to the browser with a cookie, as in the [CSRF](#csrf) note above.
+The CSRF token alone is not enough, because an attacker can start a flow of their own and copy its token into a forged form. The token must also be tied to the browser with a cookie, as in the [CSRF](#csrf) note above. A flow is shown only to the browser whose cookie matches it; another browser is given a flow of its own. A browser that does not send the cookie back at all gets a `403` page asking it to allow cookies, instead of a new flow on every request.
 
 ## Data model
 
@@ -236,7 +236,7 @@ Example:
 
 | id | identity_id | type | config |
 |---|---|---|---|
-| `01a12be9-a599-74c7-b7e6-70439cada89d` | `01a12be9-a598-707b-a6a3-1f96331092cc` | `password` | `{"hashed_password": "$argon2id$v=19$m=65536,t=3,p=4$…"}` |
+| `01a12be9-a599-74c7-b7e6-70439cada89d` | `01a12be9-a598-707b-a6a3-1f96331092cc` | `password` | `{"hashed_password": "$argon2id$v=19$m=19456,t=2,p=1$9AJst65TcxJXHOvNhnFTHg$/OCLUBfIRQJW1kwtkUYp5oMjgSlILZh6aisfi3VihaM"}` |
 
 Constraints:
 
@@ -245,7 +245,7 @@ Constraints:
 - **`UNIQUE (identity_id, type)`.** At most one credential per method. A second `password` row for identity `01a12be9-a598-707b-a6a3-1f96331092cc` is rejected; otherwise login would not know which of Ada's two hashes to check.
 - **`UNIQUE (id, type)`.** Needed only for the foreign key from `identity_credential_identifiers`. Postgres requires a foreign key to point at columns with a unique constraint.
 
-The password hash is stored in [PHC string format](https://github.com/P-H-C/phc-string-format/blob/master/phc-sf-spec.md). The algorithm and its parameters travel with the hash, so they can be raised later and old hashes upgraded at the next login. [Argon2id](https://en.wikipedia.org/wiki/Argon2) is the first choice in the [OWASP Password Storage Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html).
+The password hash is stored in [PHC string format](https://github.com/P-H-C/phc-string-format/blob/master/phc-sf-spec.md). The algorithm and its parameters travel with the hash, so they can be raised later and old hashes upgraded at the next login. [Argon2id](../standards/password-hashing.md) is the first choice in the [OWASP Password Storage Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html). Noosphere uses the cheat sheet's minimum configuration (19 MiB of memory, 2 iterations, 1 degree of parallelism) with a 16-byte random salt per password. Before hashing, the password is normalized with the PRECIS OpaqueString profile ([PRECIS](../standards/precis.md)), so the same password typed with a different kind of space or a decomposed accent still matches; case and width are kept, so `Secret` and `secret` stay different passwords.
 
 #### identity_credential_identifiers
 
@@ -338,7 +338,7 @@ A successful sign-up creates four rows, and they must either all exist or none o
 
     | id | identity_id | type | config |
     |---|---|---|---|
-    | `01a12be9-a599-74c7-b7e6-70439cada89d` | `01a12be9-a598-707b-a6a3-1f96331092cc` | `password` | `{"hashed_password": "$argon2id$v=19$m=65536,t=3,p=4$…"}` |
+    | `01a12be9-a599-74c7-b7e6-70439cada89d` | `01a12be9-a598-707b-a6a3-1f96331092cc` | `password` | `{"hashed_password": "$argon2id$v=19$m=19456,t=2,p=1$9AJst65TcxJXHOvNhnFTHg$/OCLUBfIRQJW1kwtkUYp5oMjgSlILZh6aisfi3VihaM"}` |
 
 3. `identity_credential_identifiers`: her email for login.
 
