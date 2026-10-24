@@ -9,3 +9,60 @@
 body > main {
   max-width: 28rem;
 }
+
+/* Show/Hide button added by password-toggle.js: an eye icon inside the
+   right end of the password field. */
+[data-password-wrapper] {
+  position: relative;
+  margin-bottom: var(--pico-spacing);
+}
+
+[data-password-wrapper] input {
+  margin-bottom: 0;
+  padding-inline-end: 3rem;
+}
+
+/* Pico draws its invalid-field icon at the right end too; move it left of
+   the eye. */
+[data-password-wrapper] input[aria-invalid] {
+  padding-inline-end: 4.5rem !important;
+  background-position: center right 3rem;
+}
+
+[data-password-wrapper] button {
+  position: absolute;
+  top: 50%;
+  right: 0.5rem;
+  transform: translateY(-50%);
+  width: auto;
+  margin: 0;
+  padding: 0.25rem;
+  border: none;
+  background: none;
+  box-shadow: none;
+  color: var(--pico-muted-color);
+  line-height: 0;
+}
+
+[data-password-wrapper] button:hover,
+[data-password-wrapper] button:focus-visible {
+  color: var(--pico-color);
+}
+
+[data-password-wrapper] svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+/* The hint or error under the field: the wrapper now sits between them, so
+   repeat Pico's "field + small" rules for it. */
+[data-password-wrapper] + small {
+  display: block;
+  margin-top: calc(var(--pico-spacing) * -0.75);
+  margin-bottom: var(--pico-spacing);
+  color: var(--pico-muted-color);
+}
+
+[data-password-wrapper]:has(input[aria-invalid="true"]) + small {
+  color: var(--pico-del-color);
+}

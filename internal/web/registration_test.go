@@ -85,6 +85,8 @@ var _ = Describe("GET /registration", func() {
 			Expect(page).To(ContainSubstring(`<label for="first_name">First name (optional)</label>`))
 			Expect(page).To(ContainSubstring(`<label for="last_name">Last name (optional)</label>`))
 			Expect(page).To(ContainSubstring(`<small id="password-hint">Use 8 to 64 characters.</small>`))
+			Expect(page).To(ContainSubstring(`spellcheck="false" autocapitalize="none" data-password-toggle`))
+			Expect(page).To(ContainSubstring(`<script src="/static/password-toggle.js" defer></script>`))
 			Expect(page).To(ContainSubstring(`name="password"`))
 		})
 	})
@@ -678,6 +680,18 @@ var _ = Describe("every response", func() {
 		Expect(first.Header.Get("X-Request-ID")).NotTo(BeEmpty())
 		Expect(second.Header.Get("X-Request-ID")).NotTo(BeEmpty())
 		Expect(second.Header.Get("X-Request-ID")).NotTo(Equal(first.Header.Get("X-Request-ID")))
+	})
+})
+
+var _ = Describe("GET /static/password-toggle.js", func() {
+	It("serves the script that adds the Show button", func(ctx SpecContext) {
+		ts := newTestServer(ctx)
+
+		resp := get(newBrowser(), ts.URL+"/static/password-toggle.js")
+
+		Expect(resp.StatusCode).To(Equal(http.StatusOK))
+		Expect(resp.Header.Get("Content-Type")).To(HavePrefix("text/javascript"))
+		Expect(body(resp)).To(ContainSubstring("data-password-toggle"))
 	})
 })
 

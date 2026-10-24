@@ -6,7 +6,7 @@ Noosphere renders its own pages on the server, in Go. The goal is a small, reada
 
 The browser asks for a page, and the server returns finished HTML with a form. The form posts back to the same server, which either redirects or renders the page again with errors. Identity providers commonly work this way: their login pages live on their own domain and are rendered by the server, and apps send users there and get them back through redirects.
 
-This keeps the pages that handle passwords simple. There is no JavaScript bundle, nothing loaded from other domains, and the pages work without JavaScript.
+This keeps the pages that handle passwords simple. Every page works without JavaScript, and nothing is loaded from other domains. A small first-party script adds conveniences on top (see [Password field](#password-field)), an approach called [progressive enhancement](https://developer.mozilla.org/en-US/docs/Glossary/Progressive_Enhancement).
 
 The alternative was a JSON API with a separate single-page app, for example in React. That is how many product apps are built, but it means a second codebase, a build step, and cross-origin setup, which this project does not need yet.
 
@@ -54,6 +54,16 @@ A password must be 8 to 64 characters long, counted after normalization with eac
 Each field carries the standard [`autocomplete`](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Attributes/autocomplete) value (`email`, `given-name`, `family-name`, `new-password`), so browsers and password managers can fill the form and offer to generate a strong password. When the form is shown again after an error, the typed values come back, but the password field is always empty: the password is never stored in the flow or sent back in a page.
 
 Surrounding spaces are removed on the server. Browsers already strip them from `type="email"` fields before submitting, but scripts and other clients can send anything, so the server does not rely on the browser.
+
+## Password field
+
+The password field has an eye icon at its right end, so people can check what they typed before submitting. Its behavior follows the [GOV.UK password input](https://design-system.service.gov.uk/components/password-input/) component:
+
+- The password is hidden by default. The icon is a button: an open eye shows the password, a crossed-out eye hides it again. Because it has no visible text, its accessible name ("Show password" or "Hide password") tells screen reader users what it does, and `aria-controls` points at the field. The icons come from [Feather](https://feathericons.com) and are drawn inline, so nothing is loaded from elsewhere.
+- The password is hidden again when the form is submitted, so the browser does not keep it as plain text form data.
+- The field has `spellcheck="false"` and `autocapitalize="none"`, so the browser neither underlines nor changes what is typed once it is visible.
+
+Switching a field between hidden and visible needs JavaScript, so the button is added by `static/password-toggle.js`, served by noosphere itself. The HTML only marks the field with `data-password-toggle`; without JavaScript it stays an ordinary password field. The script is a file rather than inline code, so a strict content security policy that allows only the site's own scripts remains possible.
 
 ## Context check
 
@@ -110,6 +120,7 @@ internal/web/
   static/
     pico.classless.min.css   Pico CSS, unchanged
     app.css                  noosphere's adjustments
+    password-toggle.js       the show/hide eye icon for password fields
 ```
 
 `internal/web` turns requests into flow data and flow data into pages. Storage stays in `internal/db`.

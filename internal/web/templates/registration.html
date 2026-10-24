@@ -18,6 +18,7 @@
 
   <label for="password">Password</label>
   <input id="password" name="password" type="password" autocomplete="new-password" required
+    spellcheck="false" autocapitalize="none" data-password-toggle
     aria-describedby="{{if .Errors.Password}}password-error{{else}}password-hint{{end}}"
     {{- with .Errors.Password}} aria-invalid="true"{{end}}>
   {{- with .Errors.Password}}
