@@ -1059,7 +1059,7 @@
 </span></code></pre></div>
 <p><code>internal/web</code> turns requests into flow data and flow data into pages. Storage stays in <code>internal/db</code>.</p>
 <h2 id="testing">Testing<a class="headerlink" href="#testing" title="Permanent link">&para;</a></h2>
-<p>Handler tests start the whole server with <a href="https://pkg.go.dev/net/http/httptest"><code>httptest</code></a>, routes and middleware included, on a database transaction that is rolled back after each test. A client with a cookie jar acts as the browser and does not follow redirects, so each response can be checked: the status code, the redirect target and the flow behind it, cookies, and the important parts of the page. No browser is needed.</p>
+<p>Handler tests start the whole server with <a href="https://pkg.go.dev/net/http/httptest"><code>httptest</code></a>, routes and middleware included, on the real connection pool and the test database, whose tables are emptied before each test. A client with a cookie jar acts as the browser and does not follow redirects, so each response can be checked: the status code, the redirect target and the flow behind it, cookies, and the important parts of the page. No browser is needed.</p>
 
 
 

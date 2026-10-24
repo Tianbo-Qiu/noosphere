@@ -637,6 +637,56 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Isolation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#between-packages-a-database-per-package" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Between packages: a database per package
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#inside-a-package-rollback-or-truncate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Inside a package: rollback or truncate
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-others-do-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How others do it
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-this-guarantees" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What this guarantees
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -901,6 +951,56 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Isolation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#between-packages-a-database-per-package" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Between packages: a database per package
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#inside-a-package-rollback-or-truncate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Inside a package: rollback or truncate
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-others-do-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How others do it
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-this-guarantees" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What this guarantees
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -975,7 +1075,7 @@
 <tr>
 <td>HTTP</td>
 <td>Handlers through real requests with <a href="https://pkg.go.dev/net/http/httptest"><code>httptest</code></a> and a cookie jar</td>
-<td><code>POST /registration</code> sets a session cookie and redirects</td>
+<td><code>POST /registration</code> with a valid form creates the account and redirects to the account-created page</td>
 </tr>
 <tr>
 <td>End-to-end</td>
@@ -986,9 +1086,114 @@
 </table>
 <p>The database is never mocked. Constraints, transactions and error codes are exactly the behavior worth testing, and a mock would only repeat what the test author already assumed.</p>
 <h2 id="isolation">Isolation<a class="headerlink" href="#isolation" title="Permanent link">&para;</a></h2>
-<p>Tests use their own database, <code>noosphere_test</code>, created when the database container is first set up. <code>make test</code> applies all migrations to it before running the tests. If <code>TEST_DATABASE_URL</code> is not set, the database tests are skipped.</p>
-<p>Each database test runs inside a transaction that is rolled back when the test ends, so tests never see each other's rows and leave nothing behind. Code under test that opens its own transaction gets a savepoint inside the test's transaction.</p>
-<p>Some tests will need data that is really committed, for example two concurrent sign-ups with the same email. Those will get a fresh database per test, copied from a migrated template database; creating such a copy took about 12 ms locally.</p>
+<p>Tests that share a database can see each other's rows. A test that expects one identity finds two, or a sign-up fails with "email already taken" because another test registered the same address a moment earlier. Isolation means every test starts from a known state, no matter what else is running.</p>
+<p>There are two places where tests can meet: between test packages, and between tests inside one package.</p>
+<h3 id="between-packages-a-database-per-package">Between packages: a database per package<a class="headerlink" href="#between-packages-a-database-per-package" title="Permanent link">&para;</a></h3>
+<p><code>go test ./...</code> builds each package into its own test binary and runs those binaries <strong>in parallel</strong>, as many at once as the <code>-p</code> flag allows, which defaults to the number of CPUs (<a href="https://pkg.go.dev/cmd/go#hdr-Compile_packages_and_dependencies"><code>go help build</code></a>). Two packages that use the same database therefore run at the same time.</p>
+<p>That broke when <code>internal/db</code> and <code>internal/web</code> shared one test database. A plain <code>go test ./...</code> failed on its first run:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>FAIL! -- 10 Passed | 12 Failed | 0 Pending | 0 Skipped
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>FAIL    github.com/Tianbo-Qiu/noosphere/internal/db 0.251s
+</span></code></pre></div>
+<p>The web tests had committed <code>test@example.com</code>, so a database test inserting the same address hit the unique constraint, and a database test counting identities saw the web tests' rows. The next 40 runs passed: a race like this fails only when the timing lines up, which is what makes it dangerous.</p>
+<p>The options:</p>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>How</th>
+<th>Why not, or why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Run packages one at a time</td>
+<td><code>go test -p 1 ./...</code></td>
+<td><code>-p</code> also limits compiling, so builds lose their parallelism; a proposal to separate the two is still open (<a href="https://github.com/golang/go/issues/61318">golang/go#61318</a>). It only protects runs that pass the flag, not an editor or a plain <code>go test</code>.</td>
+</tr>
+<tr>
+<td>A shared database with a lock</td>
+<td>Each package takes a Postgres advisory lock for its whole run</td>
+<td>Works, but packages still wait for each other, and every package must remember to take the lock</td>
+</tr>
+<tr>
+<td><strong>A database per package</strong></td>
+<td>Each package creates, migrates and drops its own database on the same server</td>
+<td><strong>Chosen.</strong> Nothing is shared, so nothing needs coordinating</td>
+</tr>
+<tr>
+<td>A database per test</td>
+<td>Every test gets a fresh database, usually copied from a migrated template</td>
+<td>The strongest isolation, needed only when tests inside one package run in parallel (<a href="https://michael.stapelberg.ch/posts/2024-11-19-testing-with-go-and-postgresql-ephemeral-dbs/">Michael Stapelberg</a> describes this setup)</td>
+</tr>
+</tbody>
+</table>
+<p>A database per package is the usual answer to this problem in Go projects that share one Postgres server (<a href="https://github.com/KolManis/go-integration-test-patterns">a survey of patterns</a>).</p>
+<p><code>internal/dbtest</code> implements it. A suite calls it once, in <code>BeforeSuite</code>:</p>
+<div class="language-go highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kd">var</span><span class="w"> </span><span class="nx">_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">BeforeSuite</span><span class="p">(</span><span class="kd">func</span><span class="p">(</span><span class="nx">ctx</span><span class="w"> </span><span class="nx">SpecContext</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">    </span><span class="nx">testPool</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">dbtest</span><span class="p">.</span><span class="nx">NewPool</span><span class="p">(</span><span class="nx">ctx</span><span class="p">,</span><span class="w"> </span><span class="s">"web"</span><span class="p">)</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="p">})</span>
+</span></code></pre></div>
+<p><code>NewPool</code> does the following:</p>
+<ol>
+<li>Connects to the server named by <code>TEST_DATABASE_URL</code>, using its <code>postgres</code> maintenance database.</li>
+<li>Creates a database with a random name, such as <code>noosphere_test_web_i3eawr5hexkow4f42atmwho53z</code>. The random part keeps two runs of the same package, for example from two terminals, apart as well.</li>
+<li>Applies <code>db/migrations</code> to it with goose, so its schema is exactly what the migrations produce.</li>
+<li>Returns a connection pool on it.</li>
+</ol>
+<p>When the suite ends, the pool is closed and the database is dropped with <code>DROP DATABASE … WITH (FORCE)</code>, which also closes any connection a test left open. Creating and migrating a database took 26 to 54 ms in local measurements, once per package.</p>
+<h3 id="inside-a-package-rollback-or-truncate">Inside a package: rollback or truncate<a class="headerlink" href="#inside-a-package-rollback-or-truncate" title="Permanent link">&para;</a></h3>
+<p>Tests inside one Ginkgo suite run one after another, so they only need to clean up after each other. How depends on who commits.</p>
+<p><strong>Database tests</strong> (<code>internal/db</code>) call the code directly. Each test begins a transaction, runs everything inside it, and rolls it back at the end, so nothing is ever committed. When the code under test starts its own transaction, as sign-up does, it calls <code>Begin</code> on the test's transaction and gets a <a href="https://www.postgresql.org/docs/18/sql-savepoint.html">savepoint</a> instead, which commits or rolls back inside the test's transaction.</p>
+<p><strong>Handler tests</strong> (<code>internal/web</code>) cannot work that way. The server takes the real connection pool, as it does in production, so its writes are committed. Changing the server to accept a test transaction instead would shape production code around the tests, so the tests adapt: each one starts by emptying every table except <code>goose_db_version</code>, which records the applied migrations:</p>
+<div class="language-sql highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">TRUNCATE</span><span class="w"> </span><span class="n">identities</span><span class="p">,</span><span class="w"> </span><span class="n">identity_credentials</span><span class="p">,</span><span class="w"> </span><span class="n">identity_credential_identifiers</span><span class="p">,</span><span class="w"> </span><span class="n">registration_flows</span><span class="p">,</span><span class="w"> </span><span class="n">sessions</span>
+</span></code></pre></div>
+<p>The list of tables is read from <code>pg_tables</code>, so a table added by a new migration is included automatically. The tables are emptied at the start of each test rather than at the end, so a test always begins clean even if the previous run crashed halfway.</p>
+<h3 id="how-others-do-it">How others do it<a class="headerlink" href="#how-others-do-it" title="Permanent link">&para;</a></h3>
+<p>The same two ideas, a separate database where code runs in parallel and rollback or truncation inside it, appear across frameworks and projects:</p>
+<table>
+<thead>
+<tr>
+<th>Who</th>
+<th>What they do</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://docs.djangoproject.com/en/stable/topics/testing/tools/#transactiontestcase">Django</a></td>
+<td><code>TestCase</code> wraps each test in a transaction that is rolled back; <code>TransactionTestCase</code>, for code that commits, "resets the database after the test runs by truncating all tables". With <a href="https://docs.djangoproject.com/en/stable/ref/django-admin/"><code>--parallel</code></a>, "each process gets its own database".</td>
+</tr>
+<tr>
+<td><a href="https://guides.rubyonrails.org/testing.html#parallel-testing-with-processes">Rails</a></td>
+<td>Wraps each test in a transaction that is rolled back by default. Parallel workers each get their own database, named <code>test-database-0</code>, <code>test-database-1</code> and so on.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/ory/kratos/blob/b86338da04a040247a07f46100a86dcfb3875909/persistence/sql/persister_test.go">Ory Kratos</a></td>
+<td>Its persistence tests run <code>CREATE DATABASE testdb&lt;uuid&gt;</code> on a Postgres started for the tests, then apply the migrations. Most other tests use a fresh SQLite database (<a href="https://github.com/ory/kratos/blob/b86338da04a040247a07f46100a86dcfb3875909/pkg/driver.go"><code>pkg/driver.go</code></a>).</td>
+</tr>
+<tr>
+<td><a href="https://michael.stapelberg.ch/posts/2024-11-19-testing-with-go-and-postgresql-ephemeral-dbs/">Michael Stapelberg</a></td>
+<td>One Postgres per <code>go test</code> run, and "a different PostgreSQL database for every test"; creating one takes 5 to 20 ms.</td>
+</tr>
+<tr>
+<td><a href="https://storj.dev/blog/go-integration-tests-with-postgres">Storj</a></td>
+<td>Compares a container, a database and a schema per test: about 2 s, about 135 ms and about 25 ms per test in their measurements. Schemas are cheapest but "not as isolated as separate databases".</td>
+</tr>
+<tr>
+<td><a href="https://forum.golangbridge.org/t/running-go-test-caused-flaky-database-test-failures-due-to-concurrent-test-packages-sharing-a-single-mysql-test-database/42044">A Go Forum thread</a></td>
+<td>The same flaky failures from packages sharing one test database; fixed by creating a database per package in setup and dropping it in teardown.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/golang/go/issues/61318">golang/go#61318</a></td>
+<td>An open proposal to run test packages one at a time without also serializing the build, because <code>-p 1</code> made one project's tests take 8 m 25 s instead of 50 s.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="what-this-guarantees">What this guarantees<a class="headerlink" href="#what-this-guarantees" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>go test ./...</code>, <code>make test</code>, an editor's test runner and CI all give the same result, whatever runs at the same time. Twenty parallel <code>go test ./...</code> runs and two simultaneous runs in separate terminals all passed.</li>
+<li>No test data reaches the development database, and no test database outlives its run.</li>
+<li>Tests inside one package still run one after another. Running a suite's tests in parallel, for example with <code>ginkgo -p</code>, would need a database per test.</li>
+</ul>
 <h2 id="ginkgo-and-gomega">Ginkgo and Gomega<a class="headerlink" href="#ginkgo-and-gomega" title="Permanent link">&para;</a></h2>
 <p>Specs are written with <a href="https://onsi.github.io/ginkgo/">Ginkgo</a> and <a href="https://onsi.github.io/gomega/">Gomega</a>, because nested <code>Describe</code> and <code>It</code> blocks read as statements of behavior. Each package has one standard Go test function that starts its suite, so <code>go test</code> and editors run the specs like any other tests.</p>
 <p>Spec names state the rule they prove, scoped exactly as the code or schema scopes it, for example "rejects an identifier already used by another credential of the same type". Test data is written inline and obviously fake (<code>test@example.com</code>, <code>"test-hash"</code>), and the cases are the ones a person would worry about: a different case, surrounding spaces, fullwidth letters, a decomposed <code>é</code>, an invisible character.</p>
