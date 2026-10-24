@@ -37,7 +37,7 @@ type IdentityCredentialIdentifier struct {
 type RegistrationFlow struct {
 	ID        uuid.UUID
 	CsrfToken string
-	State     []byte
+	State     RegistrationFlowState
 	ExpiresAt time.Time
 	CreatedAt time.Time
 	UpdatedAt time.Time

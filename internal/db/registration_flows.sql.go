@@ -37,6 +37,16 @@ func (q *Queries) CreateRegistrationFlow(ctx context.Context, arg CreateRegistra
 	return i, err
 }
 
+const deleteRegistrationFlow = `-- name: DeleteRegistrationFlow :exec
+DELETE FROM registration_flows
+WHERE id = $1
+`
+
+func (q *Queries) DeleteRegistrationFlow(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteRegistrationFlow, id)
+	return err
+}
+
 const getRegistrationFlow = `-- name: GetRegistrationFlow :one
 SELECT id, csrf_token, state, expires_at, created_at, updated_at FROM registration_flows
 WHERE id = $1
@@ -54,4 +64,20 @@ func (q *Queries) GetRegistrationFlow(ctx context.Context, id uuid.UUID) (Regist
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const updateRegistrationFlowState = `-- name: UpdateRegistrationFlowState :exec
+UPDATE registration_flows
+SET state = $2, updated_at = now()
+WHERE id = $1
+`
+
+type UpdateRegistrationFlowStateParams struct {
+	ID    uuid.UUID
+	State RegistrationFlowState
+}
+
+func (q *Queries) UpdateRegistrationFlowState(ctx context.Context, arg UpdateRegistrationFlowStateParams) error {
+	_, err := q.db.Exec(ctx, updateRegistrationFlowState, arg.ID, arg.State)
+	return err
 }

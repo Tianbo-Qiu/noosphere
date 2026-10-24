@@ -50,13 +50,10 @@ func (s *Server) Handler() http.Handler {
 	r := chi.NewRouter()
 	r.Use(withRequestID)
 	r.Use(s.withAccessLog)
+	r.Use(middleware.RedirectSlashes)
 	r.Handle("/static/*", http.FileServerFS(staticFS))
-
-	r.Group(func(r chi.Router) {
-		r.Use(middleware.RedirectSlashes)
-		r.Get("/registration", s.getRegistration)
-		r.Post("/registration", s.postRegistration)
-		r.Get("/registration/complete", s.getRegistrationComplete)
-	})
+	r.Get("/registration", s.getRegistration)
+	r.Post("/registration", s.postRegistration)
+	r.Get("/registration/complete", s.getRegistrationComplete)
 	return r
 }

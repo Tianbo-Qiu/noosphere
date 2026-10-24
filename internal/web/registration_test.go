@@ -4,10 +4,12 @@ import (
 	"context"
 	"net/http"
 	"net/url"
+	"sync"
 	"time"
 
 	"github.com/Tianbo-Qiu/noosphere/internal/db"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgxpool"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -34,6 +36,14 @@ var _ = Describe("GET /registration", func() {
 			Expect(csrf.HttpOnly).To(BeTrue())
 			Expect(csrf.SameSite).To(Equal(http.SameSiteLaxMode))
 			Expect(csrf.Path).To(Equal("/"))
+		})
+
+		It("marks the csrf cookie Secure when the server is configured for HTTPS", func(ctx SpecContext) {
+			ts := newTestServerWithConfig(ctx, Config{SecureCookies: true, FlowLifetime: time.Hour})
+
+			resp := get(newBrowser(), ts.URL+"/registration")
+
+			Expect(cookie(resp, csrfCookieName).Secure).To(BeTrue())
 		})
 
 		It("reuses the browser's csrf token for its next flow", func(ctx SpecContext) {
@@ -300,8 +310,8 @@ var _ = Describe("POST /registration", func() {
 		})
 	})
 
-	Context("with invalid input", func() {
-		It("rejects an email that is already registered", func(ctx SpecContext) {
+	Context("with input the user can fix", func() {
+		It("shows the form again with an error when the email is already registered", func(ctx SpecContext) {
 			ts := newTestServer(ctx)
 			first := newBrowser()
 			firstFlow := startFlow(ctx, ts, first)
@@ -311,22 +321,24 @@ var _ = Describe("POST /registration", func() {
 
 			resp := submit(second, ts, secondFlow, validForm(secondFlow, "Test@Example.com"))
 
-			Expect(resp.StatusCode).To(Equal(http.StatusBadRequest))
+			page := followBackToForm(second, ts, secondFlow, resp)
+			Expect(page).To(ContainSubstring(`<small id="email-error">An account with this email already exists.</small>`))
 			Expect(accountCount(ctx, ts)).To(Equal(1))
 		})
 
-		It("rejects an email that cannot be normalized", func(ctx SpecContext) {
+		It("shows the form again with an error when the email cannot be normalized", func(ctx SpecContext) {
 			ts := newTestServer(ctx)
 			browser := newBrowser()
 			flow := startFlow(ctx, ts, browser)
 
 			resp := submit(browser, ts, flow, validForm(flow, "test\u200b@example.com")) // zero-width space after "test"
 
-			Expect(resp.StatusCode).To(Equal(http.StatusBadRequest))
+			page := followBackToForm(browser, ts, flow, resp)
+			Expect(page).To(ContainSubstring(`<small id="email-error">Enter a valid email address.</small>`))
 			Expect(accountCount(ctx, ts)).To(BeZero())
 		})
 
-		It("rejects an empty password", func(ctx SpecContext) {
+		It("shows the form again with an error when the password is empty", func(ctx SpecContext) {
 			ts := newTestServer(ctx)
 			browser := newBrowser()
 			flow := startFlow(ctx, ts, browser)
@@ -335,9 +347,160 @@ var _ = Describe("POST /registration", func() {
 
 			resp := submit(browser, ts, flow, form)
 
-			Expect(resp.StatusCode).To(Equal(http.StatusBadRequest))
+			page := followBackToForm(browser, ts, flow, resp)
+			Expect(page).To(ContainSubstring(`<small id="password-error">Enter a password.</small>`))
 			Expect(accountCount(ctx, ts)).To(BeZero())
 		})
+
+		It("shows the form again with an error when the password has a character that cannot be used", func(ctx SpecContext) {
+			ts := newTestServer(ctx)
+			browser := newBrowser()
+			flow := startFlow(ctx, ts, browser)
+			form := validForm(flow, "test@example.com")
+			form.Set("password", "secret\u0007") // BEL, a control character
+
+			resp := submit(browser, ts, flow, form)
+
+			page := followBackToForm(browser, ts, flow, resp)
+			Expect(page).To(ContainSubstring(`<small id="password-error">This password contains a character that cannot be used.</small>`))
+			Expect(accountCount(ctx, ts)).To(BeZero())
+		})
+
+		It("shows the email and password errors together", func(ctx SpecContext) {
+			ts := newTestServer(ctx)
+			browser := newBrowser()
+			flow := startFlow(ctx, ts, browser)
+			form := validForm(flow, "")
+			form.Set("password", "")
+
+			resp := submit(browser, ts, flow, form)
+
+			page := followBackToForm(browser, ts, flow, resp)
+			Expect(page).To(ContainSubstring(`<small id="email-error">Enter a valid email address.</small>`))
+			Expect(page).To(ContainSubstring(`<small id="password-error">Enter a password.</small>`))
+		})
+
+		It("marks the invalid field and links it to its error", func(ctx SpecContext) {
+			ts := newTestServer(ctx)
+			browser := newBrowser()
+			flow := startFlow(ctx, ts, browser)
+			form := validForm(flow, "test@example.com")
+			form.Set("password", "")
+
+			resp := submit(browser, ts, flow, form)
+
+			page := followBackToForm(browser, ts, flow, resp)
+			Expect(page).To(ContainSubstring(`aria-invalid="true" aria-describedby="password-error"`))
+			Expect(page).NotTo(ContainSubstring(`aria-describedby="email-error"`))
+		})
+
+		It("keeps what the user typed, except the password", func(ctx SpecContext) {
+			ts := newTestServer(ctx)
+			browser := newBrowser()
+			flow := startFlow(ctx, ts, browser)
+			form := validForm(flow, "Test@Example.com")
+			form.Set("password", "secret\u0007") // BEL, a control character
+
+			resp := submit(browser, ts, flow, form)
+
+			page := followBackToForm(browser, ts, flow, resp)
+			Expect(page).To(ContainSubstring(`name="email" type="email" value="Test@Example.com"`))
+			Expect(page).To(ContainSubstring(`name="first_name" type="text" value="Test"`))
+			Expect(page).To(ContainSubstring(`name="last_name" type="text" value="User"`))
+			Expect(page).NotTo(ContainSubstring("secret"))
+		})
+	})
+
+	Context("after fixing a mistake", func() {
+		It("creates the account from the same flow and drops the old errors", func(ctx SpecContext) {
+			ts := newTestServer(ctx)
+			browser := newBrowser()
+			flow := startFlow(ctx, ts, browser)
+			form := validForm(flow, "test@example.com")
+			form.Set("password", "")
+			followBackToForm(browser, ts, flow, submit(browser, ts, flow, form))
+
+			resp := submit(browser, ts, flow, validForm(flow, "test@example.com"))
+
+			Expect(resp.StatusCode).To(Equal(http.StatusSeeOther))
+			Expect(resp.Header.Get("Location")).To(Equal("/registration/complete"))
+			Expect(storedAccount(ctx, ts, "test@example.com").Traits.Email).To(Equal("test@example.com"))
+		})
+	})
+
+	Context("when two people sign up with the same email at the same moment", func() {
+		It("creates one account and tells the other the email is taken", func(ctx SpecContext) {
+			ts := newTestServer(ctx)
+			first, second := newBrowser(), newBrowser()
+			firstFlow, secondFlow := startFlow(ctx, ts, first), startFlow(ctx, ts, second)
+
+			responses := submitAtOnce(
+				submission{first, ts.URL + "/registration?flow=" + firstFlow.ID.String(), validForm(firstFlow, "test@example.com")},
+				submission{second, ts.URL + "/registration?flow=" + secondFlow.ID.String(), validForm(secondFlow, "Test@Example.com")},
+			)
+
+			locations := []string{responses[0].Header.Get("Location"), responses[1].Header.Get("Location")}
+			Expect(locations).To(ConsistOf(
+				"/registration/complete",
+				Or(Equal("/registration?flow="+firstFlow.ID.String()), Equal("/registration?flow="+secondFlow.ID.String())),
+			))
+			Expect(accountCount(ctx, ts)).To(Equal(1))
+		})
+	})
+
+	Context("when the database is unavailable", func() {
+		It("shows the something-went-wrong page with 500 and no details", func(ctx SpecContext) {
+			truncateTables(ctx)
+			browser := newBrowser()
+			flow := startFlow(ctx, newTestServer(ctx), browser)
+			ts := startServer(Config{FlowLifetime: time.Hour}, closedPool(ctx))
+
+			resp := submit(browser, ts, flow, validForm(flow, "test@example.com"))
+
+			Expect(resp.StatusCode).To(Equal(http.StatusInternalServerError))
+			page := body(resp)
+			Expect(page).To(ContainSubstring("<h1>Something went wrong</h1>"))
+			Expect(page).NotTo(ContainSubstring("closed pool"))
+		})
+	})
+
+	Context("after the account is created", func() {
+		It("deletes the flow, so its URL starts a new sign-up", func(ctx SpecContext) {
+			ts := newTestServer(ctx)
+			browser := newBrowser()
+			flow := startFlow(ctx, ts, browser)
+			submit(browser, ts, flow, validForm(flow, "test@example.com"))
+
+			resp := get(browser, ts.URL+"/registration?flow="+flow.ID.String())
+
+			Expect(resp.StatusCode).To(Equal(http.StatusSeeOther))
+			Expect(redirectedFlow(ctx, ts, resp).ID).NotTo(Equal(flow.ID))
+		})
+	})
+})
+
+var _ = Describe("every response", func() {
+	It("carries its own request ID in X-Request-ID", func(ctx SpecContext) {
+		ts := newTestServer(ctx)
+		browser := newBrowser()
+
+		first := get(browser, ts.URL+"/registration")
+		second := get(browser, ts.URL+"/registration/complete")
+
+		Expect(first.Header.Get("X-Request-ID")).NotTo(BeEmpty())
+		Expect(second.Header.Get("X-Request-ID")).NotTo(BeEmpty())
+		Expect(second.Header.Get("X-Request-ID")).NotTo(Equal(first.Header.Get("X-Request-ID")))
+	})
+})
+
+var _ = Describe("a page URL with a trailing slash", func() {
+	It("redirects to the URL without it", func(ctx SpecContext) {
+		ts := newTestServer(ctx)
+
+		resp := get(newBrowser(), ts.URL+"/registration/")
+
+		Expect(resp.StatusCode).To(Equal(http.StatusMovedPermanently))
+		Expect(resp.Header.Get("Location")).To(Equal("/registration"))
 	})
 })
 
@@ -368,6 +531,55 @@ func validForm(flow db.RegistrationFlow, email string) url.Values {
 		"last_name":  {"User"},
 		"password":   {"correct horse battery staple"},
 	}
+}
+
+// followBackToForm checks that the response redirects back to the flow's form,
+// opens it, and returns the page.
+func followBackToForm(browser *http.Client, ts testServer, flow db.RegistrationFlow, resp *http.Response) string {
+	GinkgoHelper()
+	Expect(resp.StatusCode).To(Equal(http.StatusSeeOther))
+	Expect(resp.Header.Get("Location")).To(Equal("/registration?flow=" + flow.ID.String()))
+
+	form := get(browser, ts.URL+resp.Header.Get("Location"))
+	Expect(form.StatusCode).To(Equal(http.StatusOK))
+	return body(form)
+}
+
+// submission is one form post: who sends it, where, and what.
+type submission struct {
+	browser *http.Client
+	url     string
+	form    url.Values
+}
+
+// submitAtOnce sends all submissions at the same time and returns their
+// responses in the same order.
+func submitAtOnce(submissions ...submission) []*http.Response {
+	GinkgoHelper()
+	responses := make([]*http.Response, len(submissions))
+	errs := make([]error, len(submissions))
+	var wg sync.WaitGroup
+	for i, sub := range submissions {
+		wg.Go(func() {
+			responses[i], errs[i] = sub.browser.PostForm(sub.url, sub.form)
+		})
+	}
+	wg.Wait()
+	for i := range submissions {
+		Expect(errs[i]).NotTo(HaveOccurred())
+		DeferCleanup(responses[i].Body.Close)
+	}
+	return responses
+}
+
+// closedPool returns a pool that is already closed, so every query on it fails
+// the way it would if the database were unreachable.
+func closedPool(ctx context.Context) *pgxpool.Pool {
+	GinkgoHelper()
+	pool, err := pgxpool.New(ctx, testPool.Config().ConnString())
+	Expect(err).NotTo(HaveOccurred())
+	pool.Close()
+	return pool
 }
 
 // submit posts the registration form for the flow.

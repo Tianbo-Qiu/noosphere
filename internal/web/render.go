@@ -30,6 +30,7 @@ func parsePages() (map[string]*template.Template, error) {
 func (s *Server) render(w http.ResponseWriter, status int, page string, data any) {
 	var buf bytes.Buffer
 	if err := s.pages[page].ExecuteTemplate(&buf, "layout.html", data); err != nil {
+		s.logger.Error("render page", "page", page, "err", err)
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}

@@ -166,9 +166,9 @@ Noosphere renders the form itself, so the whole flow takes three requests to one
 |---|---|
 | `GET /registration` | Creates a flow and redirects to `/registration?flow=<id>` |
 | `GET /registration?flow=<id>` | Loads the flow and renders the form from it |
-| `POST /registration?flow=<id>` | Checks the flow and CSRF token, then creates the account and logs the user in, or saves the errors into the flow and redirects back to the form |
+| `POST /registration?flow=<id>` | Checks the flow and CSRF token, then creates the account and redirects to `/registration/complete`, or saves the errors into the flow and redirects back to the form |
 
-The redirect after creating a flow puts the flow ID in the URL, so a refresh or the back button shows the same attempt instead of starting a new one. Every form post is also answered with a redirect ([Post/Redirect/Get](https://en.wikipedia.org/wiki/Post/Redirect/Get)), so a refresh never submits the form twice.
+The redirect after creating a flow puts the flow ID in the URL, so a refresh or the back button shows the same attempt instead of starting a new one. Every form post is also answered with a redirect ([Post/Redirect/Get](https://en.wikipedia.org/wiki/Post/Redirect/Get)), so a refresh never submits the form twice. Once the account is created, the flow is deleted, so its URL starts a new sign-up instead of showing a form that can only fail.
 
 The CSRF token alone is not enough, because an attacker can start a flow of their own and copy its token into a forged form. The token must also be tied to the browser with a cookie, as in the [CSRF](#csrf) note above. A flow is shown only to the browser whose cookie matches it; another browser is given a flow of its own. A browser that does not send the cookie back at all gets a `403` page asking it to allow cookies, instead of a new flow on every request.
 

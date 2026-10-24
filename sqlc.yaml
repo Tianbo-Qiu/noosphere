@@ -24,3 +24,6 @@ sql:
           - column: identity_credential_identifiers.type
             go_type:
               type: CredentialType
+          - column: registration_flows.state
+            go_type:
+              type: RegistrationFlowState

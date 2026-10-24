@@ -2,11 +2,13 @@ package web
 
 import (
 	"errors"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/Tianbo-Qiu/noosphere/internal/db"
+	"github.com/Tianbo-Qiu/noosphere/internal/identifier"
 	"github.com/Tianbo-Qiu/noosphere/internal/password"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -20,9 +22,10 @@ type registrationPage struct {
 	Email     string
 	FirstName string
 	LastName  string
+	Errors    db.RegistrationErrors
 }
 
-// errorPage is the data the error template renders
+// errorPage is the data the error template renders.
 type errorPage struct {
 	Title   string
 	Message string
@@ -47,7 +50,13 @@ func (s *Server) getRegistration(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		log.Error("get registration flow", "flow_id", id, "err", err)
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		s.renderInternalError(w)
+		return
+	}
+
+	if time.Now().After(flow.ExpiresAt) {
+		log.Info("registration flow expired", "flow_id", flow.ID, "expires_at", flow.ExpiresAt)
+		s.startRegistration(w, r)
 		return
 	}
 
@@ -65,17 +74,16 @@ func (s *Server) getRegistration(w http.ResponseWriter, r *http.Request) {
 		s.startRegistration(w, r)
 		return
 	}
-	if time.Now().After(flow.ExpiresAt) {
-		log.Info("registration flow expired", "flow_id", flow.ID, "expires_at", flow.ExpiresAt)
-		s.startRegistration(w, r)
-		return
-	}
 
 	log.Info("registration flow shown", "flow_id", flow.ID)
 	s.render(w, http.StatusOK, "registration", registrationPage{
 		Title:     "Sign up",
 		Action:    "/registration?flow=" + flow.ID.String(),
 		CSRFToken: flow.CsrfToken,
+		Email:     flow.State.Traits.Email,
+		FirstName: flow.State.Traits.FirstName,
+		LastName:  flow.State.Traits.LastName,
+		Errors:    flow.State.Errors,
 	})
 }
 
@@ -88,7 +96,7 @@ func (s *Server) startRegistration(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		log.Error("create registration flow", "err", err)
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		s.renderInternalError(w)
 		return
 	}
 
@@ -116,7 +124,7 @@ func (s *Server) postRegistration(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		log.Error("get registration flow", "flow_id", id, "err", err)
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		s.renderInternalError(w)
 		return
 	}
 	if time.Now().After(flow.ExpiresAt) {
@@ -137,33 +145,71 @@ func (s *Server) postRegistration(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hashed, err := password.Hash(r.PostFormValue("password"))
-	if err != nil {
-		log.Info("registration rejected: invalid password", "flow_id", flow.ID, "err", err)
-		http.Error(w, "invalid password", http.StatusBadRequest)
-		return
-	}
-
 	email := strings.TrimSpace(r.PostFormValue("email"))
 	traits := db.Traits{
 		Email:     email,
 		FirstName: strings.TrimSpace(r.PostFormValue("first_name")),
 		LastName:  strings.TrimSpace(r.PostFormValue("last_name")),
 	}
+	plain := r.PostFormValue("password")
+
+	var formErrors db.RegistrationErrors
+	if _, err := identifier.Normalize(email); err != nil {
+		formErrors.Email = "Enter a valid email address."
+	}
+	if plain == "" {
+		formErrors.Password = "Enter a password."
+	}
+	if !formErrors.IsZero() {
+		log.Info("registration rejected: invalid input", "flow_id", flow.ID, "form_errors", formErrors)
+		s.saveFormErrorsAndRedirect(w, r, log, flow.ID, db.RegistrationFlowState{
+			Traits: traits,
+			Errors: formErrors,
+		})
+		return
+	}
+
+	hashed, err := password.Hash(plain)
+	if err != nil {
+		formErrors.Password = "This password contains a character that cannot be used."
+		log.Info("registration rejected: password cannot be normalized", "flow_id", flow.ID, "form_errors", formErrors, "err", err)
+		s.saveFormErrorsAndRedirect(w, r, log, flow.ID, db.RegistrationFlowState{
+			Traits: traits,
+			Errors: formErrors,
+		})
+		return
+	}
+
 	identity, err := db.CreatePasswordIdentity(r.Context(), s.pool, traits, email, db.PasswordConfig{HashedPassword: hashed})
-	if errors.Is(err, db.ErrInvalidIdentifier) || errors.Is(err, db.ErrIdentifierTaken) {
-		log.Info("registration rejected: email invalid or taken", "flow_id", flow.ID, "err", err)
-		http.Error(w, "email invalid or already registered", http.StatusBadRequest)
+	if errors.Is(err, db.ErrIdentifierTaken) {
+		formErrors.Email = "An account with this email already exists."
+		log.Info("registration rejected: email already registered", "flow_id", flow.ID, "form_errors", formErrors)
+		s.saveFormErrorsAndRedirect(w, r, log, flow.ID, db.RegistrationFlowState{
+			Traits: traits,
+			Errors: formErrors,
+		})
 		return
 	}
 	if err != nil {
 		log.Error("create identity", "flow_id", flow.ID, "err", err)
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		s.renderInternalError(w)
 		return
 	}
-
 	log.Info("identity created", "flow_id", flow.ID, "identity_id", identity.ID)
+
+	if err := s.queries.DeleteRegistrationFlow(r.Context(), flow.ID); err != nil {
+		log.Error("delete registration flow", "flow_id", flow.ID, "err", err)
+	}
 	http.Redirect(w, r, "/registration/complete", http.StatusSeeOther)
+}
+
+// renderInternalError shows the page for a failure the user cannot fix. The
+// cause is logged by the caller and never shown.
+func (s *Server) renderInternalError(w http.ResponseWriter) {
+	s.render(w, http.StatusInternalServerError, "error", errorPage{
+		Title:   "Something went wrong",
+		Message: "We could not complete your request. Try again in a moment.",
+	})
 }
 
 // renderRejected shows the page for a form post that failed the CSRF check.
@@ -172,6 +218,21 @@ func (s *Server) renderRejected(w http.ResponseWriter) {
 		Title:   "Request rejected",
 		Message: "This form could not be verified as coming from this browser. Start again.",
 	})
+}
+
+// saveFormErrorsAndRedirect stores what the user typed and the errors in the
+// flow, then redirects back to the form.
+func (s *Server) saveFormErrorsAndRedirect(w http.ResponseWriter, r *http.Request, log *slog.Logger, flowID uuid.UUID, state db.RegistrationFlowState) {
+	err := s.queries.UpdateRegistrationFlowState(r.Context(), db.UpdateRegistrationFlowStateParams{
+		ID:    flowID,
+		State: state,
+	})
+	if err != nil {
+		log.Error("save registration flow state", "flow_id", flowID, "err", err)
+		s.renderInternalError(w)
+		return
+	}
+	http.Redirect(w, r, "/registration?flow="+flowID.String(), http.StatusSeeOther)
 }
 
 // registrationCompletePage is the data the registration_complete template renders.

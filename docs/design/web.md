@@ -32,7 +32,20 @@ r.Handle("/static/*", http.FileServerFS(staticFS))
 r.Get("/registration", s.getRegistration)
 ```
 
-`withRequestID` gives each request an ID for logging, and `withAccessLog` writes one log line per request with its status and duration (see [Overview](overview.md#logging)). Unknown paths get `404` and wrong methods `405` from the router.
+`withRequestID` gives each request an ID for logging, and `withAccessLog` writes one log line per request with its status and duration (see [Overview](overview.md#logging)). Unknown paths get `404` and wrong methods `405` from the router. A page URL with a trailing slash, such as `/registration/`, is redirected to the URL without it ([`middleware.RedirectSlashes`](https://pkg.go.dev/github.com/go-chi/chi/v5/middleware#RedirectSlashes)), so typed or autocompleted addresses still work.
+
+## Errors
+
+Errors fall into two kinds, and each is always handled the same way:
+
+| Kind | Examples | Response |
+|---|---|---|
+| The user can fix it | email already registered, invalid email, empty password | The form again, with what the user typed (never the password) and a message under each invalid field |
+| The form cannot continue | CSRF check failed, cookies blocked (`403`), database unavailable (`500`) | An error page in the site layout, with a link to start again |
+
+A form error is saved in the flow's `state` (the typed values and one message per field), and the browser is redirected back to the form, which renders from the flow. So every page a user sees comes from a `GET`, and refreshing it never resubmits the form. The invalid field is marked with `aria-invalid="true"` and linked to its message with `aria-describedby`, which screen readers announce and Pico styles in red. Checks that cost nothing run first and report together, so a user sees every simple mistake at once; the slow password hash and the database's uniqueness check run only after those pass.
+
+The details of a `500` are only logged, never shown. Plain-text `http.Error` is used in one place: when rendering a page fails, since rendering is then what broke.
 
 ## CSRF cookie
 

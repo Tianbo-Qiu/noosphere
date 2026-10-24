@@ -38,22 +38,33 @@ type testServer struct {
 	Queries *db.Queries
 }
 
-// newTestServer empties the suite's database and starts the web server on it.
-// The server commits for real, so each spec starts from empty tables instead
-// of rolling back. Flows live for one hour.
+// newTestServer empties the suite's database and starts the web server on it,
+// configured as for local development: cookies without Secure, flows that
+// live for one hour.
 func newTestServer(ctx context.Context) testServer {
 	GinkgoHelper()
-	truncateTables(ctx)
+	return newTestServerWithConfig(ctx, Config{FlowLifetime: time.Hour})
+}
 
-	srv, err := NewServer(Config{
-		FlowLifetime: time.Hour,
-	}, testPool, slog.New(slog.DiscardHandler))
+// newTestServerWithConfig is newTestServer with the given configuration. The
+// server commits for real, so each spec starts from empty tables instead of
+// rolling back.
+func newTestServerWithConfig(ctx context.Context, cfg Config) testServer {
+	GinkgoHelper()
+	truncateTables(ctx)
+	return startServer(cfg, testPool)
+}
+
+// startServer starts the web server on the given pool.
+func startServer(cfg Config, pool *pgxpool.Pool) testServer {
+	GinkgoHelper()
+	srv, err := NewServer(cfg, pool, slog.New(slog.DiscardHandler))
 	Expect(err).NotTo(HaveOccurred())
 
 	ts := httptest.NewServer(srv.Handler())
 	DeferCleanup(ts.Close)
 
-	return testServer{URL: ts.URL, Pool: testPool, Queries: db.New(testPool)}
+	return testServer{URL: ts.URL, Pool: pool, Queries: db.New(pool)}
 }
 
 // truncateTables deletes every row from every table except goose's record

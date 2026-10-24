@@ -4,7 +4,11 @@
   <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
 
   <label for="email">Email</label>
-  <input id="email" name="email" type="email" value="{{.Email}}" autocomplete="email" required>
+  <input id="email" name="email" type="email" value="{{.Email}}" autocomplete="email" required
+    {{- with .Errors.Email}} aria-invalid="true" aria-describedby="email-error"{{end}}>
+  {{- with .Errors.Email}}
+  <small id="email-error">{{.}}</small>
+  {{- end}}
 
   <label for="first_name">First name</label>
   <input id="first_name" name="first_name" type="text" value="{{.FirstName}}" autocomplete="given-name">
@@ -13,7 +17,11 @@
   <input id="last_name" name="last_name" type="text" value="{{.LastName}}" autocomplete="family-name">
 
   <label for="password">Password</label>
-  <input id="password" name="password" type="password" autocomplete="new-password" required>
+  <input id="password" name="password" type="password" autocomplete="new-password" required
+    {{- with .Errors.Password}} aria-invalid="true" aria-describedby="password-error"{{end}}>
+  {{- with .Errors.Password}}
+  <small id="password-error">{{.}}</small>
+  {{- end}}
 
   <button type="submit">Sign up</button>
 </form>
