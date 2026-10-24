@@ -18,9 +18,12 @@
 
   <label for="password">Password</label>
   <input id="password" name="password" type="password" autocomplete="new-password" required
-    {{- with .Errors.Password}} aria-invalid="true" aria-describedby="password-error"{{end}}>
+    aria-describedby="{{if .Errors.Password}}password-error{{else}}password-hint{{end}}"
+    {{- with .Errors.Password}} aria-invalid="true"{{end}}>
   {{- with .Errors.Password}}
   <small id="password-error">{{.}}</small>
+  {{- else}}
+  <small id="password-hint">{{.PasswordHint}}</small>
   {{- end}}
 
   <button type="submit">Sign up</button>

@@ -43,11 +43,13 @@ The registration form asks for as little as it needs, and says plainly what is o
 | Email | yes | The profile keeps it as typed, without surrounding spaces; the login identifier is normalized with [PRECIS](../standards/precis.md) |
 | First name | no | As typed, without surrounding spaces |
 | Last name | no | As typed, without surrounding spaces |
-| Password | yes | Only as an [Argon2id hash](../standards/password-hashing.md) |
+| Password | yes, 8 to 64 characters | Only as an [Argon2id hash](../standards/password-hashing.md) |
 
 The names are optional because many people do not fit a first-and-last-name pattern. The W3C's guidance on [personal names around the world](https://www.w3.org/International/questions/qa-personal-names) says "don't require that people supply a family name": many people in parts of Southern India, Malaysia and Indonesia have only a given name, and Icelanders have no family name. A required field would make them type something false.
 
 Optional fields say so in their label, as in "First name (optional)", and required fields have plain labels. This follows the [GOV.UK Design System](https://design-system.service.gov.uk/patterns/question-pages/): "add '(optional)' to the labels of optional fields" and "never mark mandatory fields with asterisks". The word is part of the label, so screen readers read it out with the field, and nobody has to look up what a symbol means.
+
+A password must be 8 to 64 characters long, counted after normalization with each Unicode code point as one character, so an emoji or an accented letter counts once however it was typed. These limits follow [NIST SP 800-63B-4](https://pages.nist.gov/800-63-4/sp800-63b.html) (section 3.1.1.2): 8 is its minimum for a password used together with a second factor, and verifiers should allow at least 64. Used as the only factor, NIST requires 15, so the minimum is expected to rise, or a second factor to arrive. There are no rules about mixing character types, which NIST forbids. The form states the rule under the field ("Use 8 to 64 characters."), and a password outside it gets its own message.
 
 Each field carries the standard [`autocomplete`](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Attributes/autocomplete) value (`email`, `given-name`, `family-name`, `new-password`), so browsers and password managers can fill the form and offer to generate a strong password. When the form is shown again after an error, the typed values come back, but the password field is always empty: the password is never stored in the flow or sent back in a page.
 

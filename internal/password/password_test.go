@@ -10,6 +10,40 @@ import (
 	"golang.org/x/crypto/argon2"
 )
 
+var _ = Describe("Validate", func() {
+	DescribeTable("accepts passwords of 8 to 64 characters",
+		func(password string) {
+			Expect(Validate(password)).To(Succeed())
+		},
+		Entry("8 characters", "12345678"),
+		Entry("64 characters", strings.Repeat("a", 64)),
+		Entry("a space counts as a character", "correct horse"),
+		Entry("8 characters, one of them an emoji", "1234567\U0001F511"),             // key emoji: 4 bytes, 1 code point
+		Entry("8 characters after e + combining accent becomes é", "1234567e\u0301"), // 9 code points typed, 8 after NFC
+	)
+
+	DescribeTable("rejects a password that is too short",
+		func(password string) {
+			Expect(Validate(password)).To(MatchError(ErrTooShort))
+		},
+		Entry("empty", ""),
+		Entry("7 characters", "1234567"),
+		Entry("7 characters after e + combining accent becomes é", "123456e\u0301"), // 8 code points typed, 7 after NFC
+	)
+
+	It("rejects a password longer than 64 characters", func() {
+		Expect(Validate(strings.Repeat("a", 65))).To(MatchError(ErrTooLong))
+	})
+
+	DescribeTable("rejects a password with a character that cannot be used",
+		func(password string) {
+			Expect(Validate(password)).To(MatchError(ErrInvalidCharacter))
+		},
+		Entry("control character", "correct horse\u0007"), // BEL
+		Entry("zero-width space", "correct\u200bhorse"),   // invisible
+	)
+})
+
 var _ = Describe("Hash", func() {
 	It("returns an Argon2id PHC string with the OWASP parameters", func() {
 		hash, err := Hash("correct horse battery staple")

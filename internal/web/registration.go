@@ -2,6 +2,7 @@ package web
 
 import (
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -23,6 +24,8 @@ type registrationPage struct {
 	FirstName string
 	LastName  string
 	Errors    db.RegistrationErrors
+	// PasswordHint states the password rules under the password field.
+	PasswordHint string
 }
 
 // errorPage is the data the error template renders.
@@ -77,13 +80,14 @@ func (s *Server) getRegistration(w http.ResponseWriter, r *http.Request) {
 
 	log.Info("registration flow shown", "flow_id", flow.ID)
 	s.render(w, http.StatusOK, "registration", registrationPage{
-		Title:     "Sign up",
-		Action:    "/registration?flow=" + flow.ID.String(),
-		CSRFToken: flow.CsrfToken,
-		Email:     flow.State.Traits.Email,
-		FirstName: flow.State.Traits.FirstName,
-		LastName:  flow.State.Traits.LastName,
-		Errors:    flow.State.Errors,
+		Title:        "Sign up",
+		Action:       "/registration?flow=" + flow.ID.String(),
+		CSRFToken:    flow.CsrfToken,
+		Email:        flow.State.Traits.Email,
+		FirstName:    flow.State.Traits.FirstName,
+		LastName:     flow.State.Traits.LastName,
+		Errors:       flow.State.Errors,
+		PasswordHint: fmt.Sprintf("Use %d to %d characters.", password.MinLength, password.MaxLength),
 	})
 }
 
@@ -159,6 +163,12 @@ func (s *Server) postRegistration(w http.ResponseWriter, r *http.Request) {
 	}
 	if plain == "" {
 		formErrors.Password = "Enter a password."
+	} else if err := password.Validate(plain); errors.Is(err, password.ErrTooShort) {
+		formErrors.Password = fmt.Sprintf("Use at least %d characters.", password.MinLength)
+	} else if errors.Is(err, password.ErrTooLong) {
+		formErrors.Password = fmt.Sprintf("Use at most %d characters.", password.MaxLength)
+	} else if err != nil {
+		formErrors.Password = "This password contains a character that cannot be used."
 	}
 	if !formErrors.IsZero() {
 		log.Info("registration rejected: invalid input", "flow_id", flow.ID, "form_errors", formErrors)
@@ -171,12 +181,8 @@ func (s *Server) postRegistration(w http.ResponseWriter, r *http.Request) {
 
 	hashed, err := password.Hash(plain)
 	if err != nil {
-		formErrors.Password = "This password contains a character that cannot be used."
-		log.Info("registration rejected: password cannot be normalized", "flow_id", flow.ID, "form_errors", formErrors, "err", err)
-		s.saveFormErrorsAndRedirect(w, r, log, flow.ID, db.RegistrationFlowState{
-			Traits: traits,
-			Errors: formErrors,
-		})
+		log.Error("hash password", "flow_id", flow.ID, "err", err)
+		s.renderInternalError(w)
 		return
 	}
 

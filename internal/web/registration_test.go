@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/url"
+	"strings"
 	"sync"
 	"time"
 
@@ -77,6 +78,7 @@ var _ = Describe("GET /registration", func() {
 			Expect(page).To(ContainSubstring(`name="last_name"`))
 			Expect(page).To(ContainSubstring(`<label for="first_name">First name (optional)</label>`))
 			Expect(page).To(ContainSubstring(`<label for="last_name">Last name (optional)</label>`))
+			Expect(page).To(ContainSubstring(`<small id="password-hint">Use 8 to 64 characters.</small>`))
 			Expect(page).To(ContainSubstring(`name="password"`))
 		})
 	})
@@ -354,6 +356,41 @@ var _ = Describe("POST /registration", func() {
 			Expect(accountCount(ctx, ts)).To(BeZero())
 		})
 
+		DescribeTable("shows the form again with an error when the password length is outside 8 to 64 characters",
+			func(ctx SpecContext, plain, message string) {
+				ts := newTestServer(ctx)
+				browser := newBrowser()
+				flow := startFlow(ctx, ts, browser)
+				form := validForm(flow, "test@example.com")
+				form.Set("password", plain)
+
+				resp := submit(browser, ts, flow, form)
+
+				page := followBackToForm(browser, ts, flow, resp)
+				Expect(page).To(ContainSubstring(`<small id="password-error">` + message + `</small>`))
+				Expect(accountCount(ctx, ts)).To(BeZero())
+			},
+			Entry("7 characters", "1234567", "Use at least 8 characters."),
+			Entry("65 characters", strings.Repeat("a", 65), "Use at most 64 characters."),
+		)
+
+		DescribeTable("accepts a password at the length limits",
+			func(ctx SpecContext, plain string) {
+				ts := newTestServer(ctx)
+				browser := newBrowser()
+				flow := startFlow(ctx, ts, browser)
+				form := validForm(flow, "test@example.com")
+				form.Set("password", plain)
+
+				resp := submit(browser, ts, flow, form)
+
+				Expect(resp.Header.Get("Location")).To(Equal("/registration/complete"))
+				Expect(accountCount(ctx, ts)).To(Equal(1))
+			},
+			Entry("8 characters", "12345678"),
+			Entry("64 characters", strings.Repeat("a", 64)),
+		)
+
 		It("shows the form again with an error when the password has a character that cannot be used", func(ctx SpecContext) {
 			ts := newTestServer(ctx)
 			browser := newBrowser()
@@ -392,8 +429,9 @@ var _ = Describe("POST /registration", func() {
 			resp := submit(browser, ts, flow, form)
 
 			page := followBackToForm(browser, ts, flow, resp)
-			Expect(page).To(ContainSubstring(`aria-invalid="true" aria-describedby="password-error"`))
+			Expect(page).To(ContainSubstring(`aria-describedby="password-error" aria-invalid="true">`))
 			Expect(page).NotTo(ContainSubstring(`aria-describedby="email-error"`))
+			Expect(page).NotTo(ContainSubstring(`id="password-hint"`), "the error replaces the hint")
 		})
 
 		It("keeps what the user typed, except the password", func(ctx SpecContext) {
