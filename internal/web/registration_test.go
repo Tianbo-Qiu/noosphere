@@ -457,6 +457,68 @@ var _ = Describe("POST /registration", func() {
 		})
 	})
 
+	Context("with the context check on and a password that is a word from the sign-up itself", func() {
+		DescribeTable("shows the form again with an error",
+			func(ctx SpecContext, email, firstName, plain string) {
+				ts := newTestServerWithConfig(ctx, Config{FlowLifetime: time.Hour, PasswordContextCheck: true})
+				browser := newBrowser()
+				flow := startFlow(ctx, ts, browser)
+				form := validForm(flow, email)
+				form.Set("first_name", firstName)
+				form.Set("password", plain)
+
+				resp := submit(browser, ts, flow, form)
+
+				page := followBackToForm(browser, ts, flow, resp)
+				Expect(page).To(ContainSubstring(`<small id="password-error">Don&#39;t use your email, your name or the site&#39;s name as your password.</small>`))
+				Expect(accountCount(ctx, ts)).To(BeZero())
+			},
+			Entry("the email", "test@example.com", "Test", "Test@Example.com"),
+			Entry("the part of the email before the @", "longname@example.com", "Test", "LongName"),
+			Entry("the first name", "test@example.com", "Bartholomew", "bartholomew"),
+			Entry("the site's name", "test@example.com", "Test", "Noosphere"),
+		)
+
+		It("accepts a password that only contains the email", func(ctx SpecContext) {
+			ts := newTestServerWithConfig(ctx, Config{FlowLifetime: time.Hour, PasswordContextCheck: true})
+			browser := newBrowser()
+			flow := startFlow(ctx, ts, browser)
+			form := validForm(flow, "test@example.com")
+			form.Set("password", "test@example.com and a lot more")
+
+			resp := submit(browser, ts, flow, form)
+
+			Expect(resp.Header.Get("Location")).To(Equal("/registration/complete"))
+		})
+
+		It("does not contact the breached password service", func(ctx SpecContext) {
+			hibp := newFakePwnedPasswords(nil)
+			ts := newTestServerWithConfig(ctx, Config{FlowLifetime: time.Hour, PasswordContextCheck: true, PwnedPasswords: pwned.NewClient(hibp.url, time.Second)})
+			browser := newBrowser()
+			flow := startFlow(ctx, ts, browser)
+			form := validForm(flow, "test@example.com")
+			form.Set("password", "noosphere")
+
+			submit(browser, ts, flow, form)
+
+			Expect(hibp.requestCount()).To(BeZero())
+		})
+	})
+
+	Context("with the context check off", func() {
+		It("accepts a password that is the site's name", func(ctx SpecContext) {
+			ts := newTestServer(ctx)
+			browser := newBrowser()
+			flow := startFlow(ctx, ts, browser)
+			form := validForm(flow, "test@example.com")
+			form.Set("password", "noosphere")
+
+			resp := submit(browser, ts, flow, form)
+
+			Expect(resp.Header.Get("Location")).To(Equal("/registration/complete"))
+		})
+	})
+
 	Context("with the breached password check on", func() {
 		It("shows the form again with an error when the password has been in a breach", func(ctx SpecContext) {
 			hibp := newFakePwnedPasswords(map[string]int{"correct horse battery staple": 391})

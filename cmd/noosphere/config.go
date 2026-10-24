@@ -19,8 +19,10 @@ type config struct {
 	LogLevel    string
 	Web         web.Config
 
-	// PwnedPasswordsCheck turns on the breached password check. It is off by
-	// default because it sends requests to an outside service.
+	// PasswordContextCheck and PwnedPasswordsCheck turn on the password
+	// checks against context words and breached passwords. It is on by
+	// default; local development turns it off, so sign-up works offline and
+	// sends no requests to an outside service.
 	PwnedPasswordsCheck   bool
 	PwnedPasswordsURL     string
 	PwnedPasswordsTimeout time.Duration
@@ -37,7 +39,11 @@ func loadConfig() (config, error) {
 	if err != nil {
 		return config{}, fmt.Errorf("COOKIE_SECURE: %w", err)
 	}
-	pwnedCheck, err := strconv.ParseBool(getenv("PWNED_PASSWORDS_CHECK", "false"))
+	contextCheck, err := strconv.ParseBool(getenv("PASSWORD_CONTEXT_CHECK", "true"))
+	if err != nil {
+		return config{}, fmt.Errorf("PASSWORD_CONTEXT_CHECK: %w", err)
+	}
+	pwnedCheck, err := strconv.ParseBool(getenv("PWNED_PASSWORDS_CHECK", "true"))
 	if err != nil {
 		return config{}, fmt.Errorf("PWNED_PASSWORDS_CHECK: %w", err)
 	}
@@ -51,8 +57,9 @@ func loadConfig() (config, error) {
 		LogFormat:   getenv("LOG_FORMAT", "text"),
 		LogLevel:    getenv("LOG_LEVEL", "info"),
 		Web: web.Config{
-			SecureCookies: secureCookies,
-			FlowLifetime:  time.Hour,
+			SecureCookies:        secureCookies,
+			FlowLifetime:         time.Hour,
+			PasswordContextCheck: contextCheck,
 		},
 		PwnedPasswordsCheck:   pwnedCheck,
 		PwnedPasswordsURL:     getenv("PWNED_PASSWORDS_URL", pwned.DefaultURL),

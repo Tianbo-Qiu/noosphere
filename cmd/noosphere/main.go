@@ -57,6 +57,7 @@ func run(ctx context.Context, cfg config, logger *slog.Logger) error {
 		"addr", cfg.Addr,
 		"secure_cookies", cfg.Web.SecureCookies,
 		"flow_lifetime", cfg.Web.FlowLifetime,
+		"password_context_check", cfg.Web.PasswordContextCheck,
 		"pwned_passwords_check", cfg.PwnedPasswordsCheck,
 	)
 	return http.ListenAndServe(cfg.Addr, srv.Handler())

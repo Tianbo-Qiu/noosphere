@@ -1,7 +1,14 @@
 VENV := .venv
 MKDOCS := $(VENV)/bin/mkdocs
-DB_URL := postgres://noosphere:noosphere@localhost:5432/noosphere?sslmode=disable
-TEST_DB_URL := postgres://noosphere:noosphere@localhost:5432/noosphere_test?sslmode=disable
+# Settings for local development. Each can be overridden from the shell or
+# the command line, for example PASSWORD_CONTEXT_CHECK=true make run or
+# make run PASSWORD_CONTEXT_CHECK=true.
+DB_URL ?= postgres://noosphere:noosphere@localhost:5432/noosphere?sslmode=disable
+TEST_DB_URL ?= postgres://noosphere:noosphere@localhost:5432/noosphere_test?sslmode=disable
+COOKIE_SECURE ?= false
+PASSWORD_CONTEXT_CHECK ?= false
+PWNED_PASSWORDS_CHECK ?= false
+
 GOOSE := GOOSE_DRIVER=postgres GOOSE_MIGRATION_DIR=db/migrations go tool goose
 
 .DEFAULT_GOAL := docs
@@ -54,7 +61,7 @@ generate:
 .PHONY: run
 
 run:
-	DATABASE_URL='$(DB_URL)' COOKIE_SECURE=false go run ./cmd/noosphere
+	DATABASE_URL='$(DB_URL)' COOKIE_SECURE=$(COOKIE_SECURE) PASSWORD_CONTEXT_CHECK=$(PASSWORD_CONTEXT_CHECK) PWNED_PASSWORDS_CHECK=$(PWNED_PASSWORDS_CHECK) go run ./cmd/noosphere
 
 .PHONY: test test-v
 

@@ -170,6 +170,9 @@ func (s *Server) postRegistration(w http.ResponseWriter, r *http.Request) {
 	} else if err != nil {
 		formErrors.Password = "This password contains a character that cannot be used."
 	}
+	if formErrors.Password == "" && s.cfg.PasswordContextCheck && password.MatchesContext(plain, passwordContextWords(traits)...) {
+		formErrors.Password = "Don't use your email, your name or the site's name as your password."
+	}
 	if formErrors.Password == "" && s.cfg.PwnedPasswords != nil {
 		count, err := s.cfg.PwnedPasswords.Count(r.Context(), plain)
 		if err != nil {
@@ -215,6 +218,17 @@ func (s *Server) postRegistration(w http.ResponseWriter, r *http.Request) {
 		log.Error("delete registration flow", "flow_id", flow.ID, "err", err)
 	}
 	http.Redirect(w, r, "/registration/complete", http.StatusSeeOther)
+}
+
+// serviceName is the name users know this service by. A password equal to it
+// is among the first an attacker would try.
+const serviceName = "noosphere"
+
+// passwordContextWords returns the words a password must not be: the email,
+// the part of it before the @, the user's names and the service name.
+func passwordContextWords(traits db.Traits) []string {
+	localPart, _, _ := strings.Cut(traits.Email, "@")
+	return []string{traits.Email, localPart, traits.FirstName, traits.LastName, serviceName}
 }
 
 // renderInternalError shows the page for a failure the user cannot fix. The

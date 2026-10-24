@@ -44,6 +44,28 @@ var _ = Describe("Validate", func() {
 	)
 })
 
+var _ = Describe("MatchesContext", func() {
+	DescribeTable("matches a password that is one of the context words",
+		func(password string, words []string) {
+			Expect(MatchesContext(password, words...)).To(BeTrue())
+		},
+		Entry("the same word", "test@example.com", []string{"test@example.com"}),
+		Entry("a different case", "Test@Example.COM", []string{"test@example.com"}),
+		Entry("any of several words", "noosphere", []string{"test@example.com", "noosphere"}),
+		Entry("a no-break space where the word has a space", "Test\u00a0User", []string{"test user"}), // normalized to a plain space
+	)
+
+	DescribeTable("does not match a password that only contains a context word",
+		func(password string, words []string) {
+			Expect(MatchesContext(password, words...)).To(BeFalse())
+		},
+		Entry("the word with more after it", "test@example.com-and-more", []string{"test@example.com"}),
+		Entry("the word inside a longer phrase", "my noosphere password", []string{"noosphere"}),
+		Entry("no words at all", "correct horse battery staple", nil),
+		Entry("an empty word", "correct horse battery staple", []string{""}),
+	)
+})
+
 var _ = Describe("Hash", func() {
 	It("returns an Argon2id PHC string with the OWASP parameters", func() {
 		hash, err := Hash("correct horse battery staple")

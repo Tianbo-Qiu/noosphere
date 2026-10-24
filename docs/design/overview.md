@@ -61,7 +61,8 @@ The server reads its settings from environment variables at startup and stops if
 | `COOKIE_SECURE` | `true` | Mark cookies `Secure` (HTTPS only); `make run` sets `false` for local HTTP |
 | `LOG_FORMAT` | `text` | `text` or `json` |
 | `LOG_LEVEL` | `info` | `debug`, `info`, `warn` or `error` |
-| `PWNED_PASSWORDS_CHECK` | `false` | Reject new passwords seen in data breaches, using the Pwned Passwords API |
+| `PASSWORD_CONTEXT_CHECK` | `true` | Reject new passwords that are the email, the user's name or the site's name; `make run` sets `false` |
+| `PWNED_PASSWORDS_CHECK` | `true` | Reject new passwords seen in data breaches, using the Pwned Passwords API; `make run` sets `false` |
 | `PWNED_PASSWORDS_URL` | `https://api.pwnedpasswords.com` | The API to ask, for example a self-hosted mirror |
 | `PWNED_PASSWORDS_TIMEOUT` | `2s` | How long to wait for an answer before accepting the password anyway |
 

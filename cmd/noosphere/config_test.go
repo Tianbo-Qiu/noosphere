@@ -10,7 +10,7 @@ import (
 
 var _ = Describe("loadConfig", func() {
 	BeforeEach(func() {
-		for _, key := range []string{"DATABASE_URL", "ADDR", "COOKIE_SECURE", "LOG_FORMAT", "LOG_LEVEL", "PWNED_PASSWORDS_CHECK", "PWNED_PASSWORDS_URL", "PWNED_PASSWORDS_TIMEOUT"} {
+		for _, key := range []string{"DATABASE_URL", "ADDR", "COOKIE_SECURE", "LOG_FORMAT", "LOG_LEVEL", "PASSWORD_CONTEXT_CHECK", "PWNED_PASSWORDS_CHECK", "PWNED_PASSWORDS_URL", "PWNED_PASSWORDS_TIMEOUT"} {
 			GinkgoT().Setenv(key, "")
 		}
 	})
@@ -26,9 +26,9 @@ var _ = Describe("loadConfig", func() {
 			Addr:        ":8080",
 			LogFormat:   "text",
 			LogLevel:    "info",
-			Web:         web.Config{SecureCookies: true, FlowLifetime: time.Hour},
+			Web:         web.Config{SecureCookies: true, FlowLifetime: time.Hour, PasswordContextCheck: true},
 
-			PwnedPasswordsCheck:   false,
+			PwnedPasswordsCheck:   true,
 			PwnedPasswordsURL:     "https://api.pwnedpasswords.com",
 			PwnedPasswordsTimeout: 2 * time.Second,
 		}))
@@ -40,14 +40,16 @@ var _ = Describe("loadConfig", func() {
 		GinkgoT().Setenv("COOKIE_SECURE", "false")
 		GinkgoT().Setenv("LOG_FORMAT", "json")
 		GinkgoT().Setenv("LOG_LEVEL", "debug")
-		GinkgoT().Setenv("PWNED_PASSWORDS_CHECK", "true")
+		GinkgoT().Setenv("PASSWORD_CONTEXT_CHECK", "false")
+		GinkgoT().Setenv("PWNED_PASSWORDS_CHECK", "false")
 		GinkgoT().Setenv("PWNED_PASSWORDS_URL", "http://127.0.0.1:9001")
 		GinkgoT().Setenv("PWNED_PASSWORDS_TIMEOUT", "500ms")
 
 		cfg, err := loadConfig()
 
 		Expect(err).NotTo(HaveOccurred())
-		Expect(cfg.PwnedPasswordsCheck).To(BeTrue())
+		Expect(cfg.Web.PasswordContextCheck).To(BeFalse())
+		Expect(cfg.PwnedPasswordsCheck).To(BeFalse())
 		Expect(cfg.PwnedPasswordsURL).To(Equal("http://127.0.0.1:9001"))
 		Expect(cfg.PwnedPasswordsTimeout).To(Equal(500 * time.Millisecond))
 		Expect(cfg.Addr).To(Equal("127.0.0.1:9000"))
@@ -91,6 +93,15 @@ var _ = Describe("loadConfig", func() {
 		Entry("a word", "yes"),
 		Entry("a typo", "ture"),
 	)
+
+	It("rejects a PASSWORD_CONTEXT_CHECK that is not a boolean", func() {
+		GinkgoT().Setenv("DATABASE_URL", "postgres://test:test@localhost:5432/test")
+		GinkgoT().Setenv("PASSWORD_CONTEXT_CHECK", "on")
+
+		_, err := loadConfig()
+
+		Expect(err).To(MatchError(HavePrefix("PASSWORD_CONTEXT_CHECK: ")))
+	})
 
 	It("rejects a PWNED_PASSWORDS_CHECK that is not a boolean", func() {
 		GinkgoT().Setenv("DATABASE_URL", "postgres://test:test@localhost:5432/test")

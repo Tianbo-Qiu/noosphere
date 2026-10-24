@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"strings"
 	"unicode/utf8"
 
 	"golang.org/x/crypto/argon2"
@@ -53,6 +54,25 @@ func Validate(password string) error {
 		return ErrTooLong
 	}
 	return nil
+}
+
+// MatchesContext reports whether the password is one of the context words:
+// values tied to the user or the service, such as the email address or the
+// service name, that an attacker would try first. As NIST SP 800-63B-4
+// requires, the whole password is compared, not substrings. The comparison
+// ignores case and uses the same normalization as Hash. Empty words are
+// skipped.
+func MatchesContext(password string, words ...string) bool {
+	normalized, err := precis.OpaqueString.String(password)
+	if err != nil {
+		normalized = password
+	}
+	for _, word := range words {
+		if word != "" && strings.EqualFold(normalized, word) {
+			return true
+		}
+	}
+	return false
 }
 
 // Hash normalizes the password with the PRECIS OpaqueString profile and

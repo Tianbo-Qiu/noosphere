@@ -19,6 +19,9 @@ type Config struct {
 	SecureCookies bool
 	// FlowLifetime is how long a registration flow stays valid.
 	FlowLifetime time.Duration
+	// PasswordContextCheck rejects new passwords that are the email, the
+	// user's name or the service's name.
+	PasswordContextCheck bool
 	// PwnedPasswords, if set, rejects new passwords that have been seen in a
 	// data breach. If the check itself fails, the password is accepted.
 	PwnedPasswords *pwned.Client
