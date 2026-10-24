@@ -3,6 +3,7 @@ package web
 import (
 	"errors"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/Tianbo-Qiu/noosphere/internal/db"
@@ -143,11 +144,11 @@ func (s *Server) postRegistration(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	email := r.PostFormValue("email")
+	email := strings.TrimSpace(r.PostFormValue("email"))
 	traits := db.Traits{
 		Email:     email,
-		FirstName: r.PostFormValue("first_name"),
-		LastName:  r.PostFormValue("last_name"),
+		FirstName: strings.TrimSpace(r.PostFormValue("first_name")),
+		LastName:  strings.TrimSpace(r.PostFormValue("last_name")),
 	}
 	identity, err := db.CreatePasswordIdentity(r.Context(), s.pool, traits, email, db.PasswordConfig{HashedPassword: hashed})
 	if errors.Is(err, db.ErrInvalidIdentifier) || errors.Is(err, db.ErrIdentifierTaken) {

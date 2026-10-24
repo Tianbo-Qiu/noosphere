@@ -8,6 +8,7 @@ import (
 
 	"github.com/Tianbo-Qiu/noosphere/internal/db"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -50,8 +51,12 @@ func (s *Server) Handler() http.Handler {
 	r.Use(withRequestID)
 	r.Use(s.withAccessLog)
 	r.Handle("/static/*", http.FileServerFS(staticFS))
-	r.Get("/registration", s.getRegistration)
-	r.Post("/registration", s.postRegistration)
-	r.Get("/registration/complete", s.getRegistrationComplete)
+
+	r.Group(func(r chi.Router) {
+		r.Use(middleware.RedirectSlashes)
+		r.Get("/registration", s.getRegistration)
+		r.Post("/registration", s.postRegistration)
+		r.Get("/registration/complete", s.getRegistrationComplete)
+	})
 	return r
 }

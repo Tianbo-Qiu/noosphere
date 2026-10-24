@@ -167,15 +167,28 @@ var _ = Describe("POST /registration", func() {
 			Expect(account.HashedPassword).NotTo(ContainSubstring("correct horse battery staple"))
 		})
 
-		It("keeps the email as typed in the profile and stores the login identifier normalized", func(ctx SpecContext) {
+		It("keeps the email's case in the profile, trims surrounding spaces, and stores the login identifier normalized", func(ctx SpecContext) {
 			ts := newTestServer(ctx)
 			browser := newBrowser()
 			flow := startFlow(ctx, ts, browser)
 
-			submit(browser, ts, flow, validForm(flow, " Test@Example.com"))
+			submit(browser, ts, flow, validForm(flow, " Test@Example.com\n"))
 
 			account := storedAccount(ctx, ts, "test@example.com")
-			Expect(account.Traits.Email).To(Equal(" Test@Example.com"))
+			Expect(account.Traits.Email).To(Equal("Test@Example.com"))
+		})
+
+		It("trims spaces around the names", func(ctx SpecContext) {
+			ts := newTestServer(ctx)
+			browser := newBrowser()
+			flow := startFlow(ctx, ts, browser)
+			form := validForm(flow, "test@example.com")
+			form.Set("first_name", "  Test ")
+			form.Set("last_name", "\tUser\n")
+
+			submit(browser, ts, flow, form)
+
+			Expect(storedAccount(ctx, ts, "test@example.com").Traits).To(Equal(db.Traits{Email: "test@example.com", FirstName: "Test", LastName: "User"}))
 		})
 
 		It("leaves out names that were not given", func(ctx SpecContext) {
