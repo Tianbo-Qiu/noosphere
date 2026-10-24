@@ -33,4 +33,5 @@ jobs:
         run: |
           make generate
           git diff --exit-code
-      - run: make check
+      - run: make fmt-check vet
+      - run: make test-v ARGS=-github-output
