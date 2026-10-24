@@ -62,4 +62,4 @@ internal/web/
 
 ## Testing
 
-Handler tests start the whole server with [`httptest`](https://pkg.go.dev/net/http/httptest), routes and middleware included, on a database transaction that is rolled back after each test. A client with a cookie jar acts as the browser and does not follow redirects, so each response can be checked: the status code, the redirect target and the flow behind it, cookies, and the important parts of the page. No browser is needed.
+Handler tests start the whole server with [`httptest`](https://pkg.go.dev/net/http/httptest), routes and middleware included, on the real connection pool and the test database, whose tables are emptied before each test. A client with a cookie jar acts as the browser and does not follow redirects, so each response can be checked: the status code, the redirect target and the flow behind it, cookies, and the important parts of the page. No browser is needed.

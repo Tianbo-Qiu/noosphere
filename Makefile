@@ -56,15 +56,12 @@ generate:
 run:
 	DATABASE_URL='$(DB_URL)' COOKIE_SECURE=false go run ./cmd/noosphere
 
-.PHONY: test test-v test-migrate
+.PHONY: test test-v
 
-test-migrate:
-	GOOSE_DBSTRING='$(TEST_DB_URL)' $(GOOSE) up
-
-test: test-migrate
+test:
 	TEST_DATABASE_URL='$(TEST_DB_URL)' go test -count=1 ./...
 
-test-v: test-migrate
+test-v:
 	TEST_DATABASE_URL='$(TEST_DB_URL)' go tool ginkgo -r -v --randomize-all $(ARGS)
 
 .PHONY: fmt fmt-check vet check

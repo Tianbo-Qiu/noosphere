@@ -2,9 +2,9 @@ package db
 
 import (
 	"context"
-	"os"
 	"testing"
 
+	"github.com/Tianbo-Qiu/noosphere/internal/dbtest"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	. "github.com/onsi/ginkgo/v2"
@@ -19,14 +19,7 @@ func TestDB(t *testing.T) {
 }
 
 var _ = BeforeSuite(func(ctx SpecContext) {
-	url := os.Getenv("TEST_DATABASE_URL")
-	if url == "" {
-		Skip("TEST_DATABASE_URL is not set")
-	}
-	pool, err := pgxpool.New(ctx, url)
-	Expect(err).NotTo(HaveOccurred())
-	testPool = pool
-	DeferCleanup(pool.Close)
+	testPool = dbtest.NewPool(ctx, "db")
 })
 
 // testTx returns a transaction that is rolled back when the spec ends.

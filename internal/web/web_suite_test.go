@@ -7,11 +7,14 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/http/httptest"
-	"os"
+	"net/url"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/Tianbo-Qiu/noosphere/internal/db"
+	"github.com/Tianbo-Qiu/noosphere/internal/dbtest"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -25,42 +28,52 @@ func TestWeb(t *testing.T) {
 var testPool *pgxpool.Pool
 
 var _ = BeforeSuite(func(ctx SpecContext) {
-	url := os.Getenv("TEST_DATABASE_URL")
-	if url == "" {
-		Skip("TEST_DATABASE_URL is not set")
-	}
-	pool, err := pgxpool.New(ctx, url)
-	Expect(err).NotTo(HaveOccurred())
-	testPool = pool
-	DeferCleanup(pool.Close)
+	testPool = dbtest.NewPool(ctx, "web")
 })
 
-// testServer is a running web server and the queries it uses.
+// testServer is a running web server and queries on its database.
 type testServer struct {
 	URL     string
+	Pool    *pgxpool.Pool
 	Queries *db.Queries
 }
 
-// newTestServer starts the web server on a transaction that is rolled back
-// when the spec ends. Flows live for one hour.
+// newTestServer empties the suite's database and starts the web server on it.
+// The server commits for real, so each spec starts from empty tables instead
+// of rolling back. Flows live for one hour.
 func newTestServer(ctx context.Context) testServer {
 	GinkgoHelper()
-	tx, err := testPool.Begin(ctx)
-	Expect(err).NotTo(HaveOccurred())
-	DeferCleanup(func() {
-		tx.Rollback(context.Background())
-	})
+	truncateTables(ctx)
 
-	queries := db.New(tx)
 	srv, err := NewServer(Config{
 		FlowLifetime: time.Hour,
-	}, queries, slog.New(slog.DiscardHandler))
+	}, testPool, slog.New(slog.DiscardHandler))
 	Expect(err).NotTo(HaveOccurred())
 
 	ts := httptest.NewServer(srv.Handler())
 	DeferCleanup(ts.Close)
 
-	return testServer{URL: ts.URL, Queries: queries}
+	return testServer{URL: ts.URL, Pool: testPool, Queries: db.New(testPool)}
+}
+
+// truncateTables deletes every row from every table except goose's record
+// of applied migrations.
+func truncateTables(ctx context.Context) {
+	GinkgoHelper()
+	rows, err := testPool.Query(ctx, `
+		SELECT tablename FROM pg_tables
+		WHERE schemaname = 'public' AND tablename <> 'goose_db_version'
+		`)
+	Expect(err).NotTo(HaveOccurred())
+	tables, err := pgx.CollectRows(rows, pgx.RowTo[string])
+	Expect(err).NotTo(HaveOccurred())
+
+	names := make([]string, len(tables))
+	for i, t := range tables {
+		names[i] = pgx.Identifier{t}.Sanitize()
+	}
+	_, err = testPool.Exec(ctx, "TRUNCATE "+strings.Join(names, ", "))
+	Expect(err).NotTo(HaveOccurred())
 }
 
 // newBrowser returns a client that keeps cookies like a browser and does not
@@ -87,6 +100,15 @@ func doNotFollowRedirects(*http.Request, []*http.Request) error {
 func get(client *http.Client, url string) *http.Response {
 	GinkgoHelper()
 	resp, err := client.Get(url)
+	Expect(err).NotTo(HaveOccurred())
+	DeferCleanup(resp.Body.Close)
+	return resp
+}
+
+// post sends a form as a POST request and returns the response.
+func post(client *http.Client, target string, form url.Values) *http.Response {
+	GinkgoHelper()
+	resp, err := client.PostForm(target, form)
 	Expect(err).NotTo(HaveOccurred())
 	DeferCleanup(resp.Body.Close)
 	return resp

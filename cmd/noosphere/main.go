@@ -10,7 +10,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/Tianbo-Qiu/noosphere/internal/db"
 	"github.com/Tianbo-Qiu/noosphere/internal/logging"
 	"github.com/Tianbo-Qiu/noosphere/internal/web"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -56,7 +55,7 @@ func run(ctx context.Context, logger *slog.Logger) error {
 		SecureCookies: secureCookies,
 		FlowLifetime:  time.Hour,
 	}
-	srv, err := web.NewServer(config, db.New(pool), logger)
+	srv, err := web.NewServer(config, pool, logger)
 	if err != nil {
 		return fmt.Errorf("create server: %w", err)
 	}

@@ -8,6 +8,7 @@ import (
 
 	"github.com/Tianbo-Qiu/noosphere/internal/db"
 	"github.com/go-chi/chi/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type Config struct {
@@ -20,19 +21,21 @@ type Config struct {
 
 type Server struct {
 	cfg     Config
+	pool    *pgxpool.Pool
 	queries *db.Queries
 	logger  *slog.Logger
 	pages   map[string]*template.Template
 }
 
-func NewServer(cfg Config, queries *db.Queries, logger *slog.Logger) (*Server, error) {
+func NewServer(cfg Config, pool *pgxpool.Pool, logger *slog.Logger) (*Server, error) {
 	pages, err := parsePages()
 	if err != nil {
 		return nil, err
 	}
 	return &Server{
 		cfg:     cfg,
-		queries: queries,
+		pool:    pool,
+		queries: db.New(pool),
 		logger:  logger,
 		pages:   pages,
 	}, nil
@@ -48,5 +51,7 @@ func (s *Server) Handler() http.Handler {
 	r.Use(s.withAccessLog)
 	r.Handle("/static/*", http.FileServerFS(staticFS))
 	r.Get("/registration", s.getRegistration)
+	r.Post("/registration", s.postRegistration)
+	r.Get("/registration/complete", s.getRegistrationComplete)
 	return r
 }

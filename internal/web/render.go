@@ -13,7 +13,7 @@ var templateFS embed.FS
 //go:embed static
 var staticFS embed.FS
 
-var pageNames = []string{"registration", "error"}
+var pageNames = []string{"registration", "registration_complete", "error"}
 
 func parsePages() (map[string]*template.Template, error) {
 	pages := make(map[string]*template.Template, len(pageNames))

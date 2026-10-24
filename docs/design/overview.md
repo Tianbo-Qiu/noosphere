@@ -27,9 +27,10 @@ internal/db/            storage: generated query code plus hand-written transact
 internal/identifier/    normalization of login identifiers such as emails
 internal/password/      password hashing
 internal/logging/       builds the logger from its format and level
+internal/dbtest/        test-only: a migrated database per test package
 db/migrations/          schema changes, applied in order
 db/queries/             the SQL that sqlc turns into Go
-db/init/                one-time setup for a new database container (creates the test database)
+db/init/                one-time setup for a new database container (creates noosphere_test, the database TEST_DATABASE_URL names)
 ```
 
 Each package has one job, and only `cmd/noosphere` reads environment variables; the other packages receive their settings as arguments. Code outside `internal/db` never writes SQL and never sees a Postgres error code: `internal/db` turns those into plain Go errors such as `ErrIdentifierTaken`.
@@ -44,7 +45,7 @@ The Makefile wraps the common tasks:
 | `make migrate-up` | Applies new migrations to the development database |
 | `make generate` | Regenerates the Go query code after a change in `db/queries` or `db/migrations` |
 | `make run` | Runs the server on `http://localhost:8080` against the development database |
-| `make test` | Migrates the test database, then runs all tests |
+| `make test` | Runs all tests; each test package gets its own database on the local Postgres |
 | `make test-v` | The same tests through the Ginkgo runner, in random order, printing every spec; extra flags go in `ARGS` |
 | `make check` | Formatting check, `go vet`, then tests; run before committing |
 
