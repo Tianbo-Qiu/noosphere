@@ -55,6 +55,18 @@ Each field carries the standard [`autocomplete`](https://developer.mozilla.org/e
 
 Surrounding spaces are removed on the server. Browsers already strip them from `type="email"` fields before submitting, but scripts and other clients can send anything, so the server does not rely on the browser.
 
+## Breached password check
+
+When it is turned on, sign-up refuses a password that has appeared in a data breach, with the message "This password has appeared in a data breach. Choose a different one." The check asks the [Pwned Passwords](../standards/breached-password-check.md) range API, sending only the first 5 characters of the password's SHA-1 hash and asking for a padded response, so the service learns neither the password nor which one was checked.
+
+It is off by default (`PWNED_PASSWORDS_CHECK=false`), because it sends requests to an outside service on every sign-up, which a deployment should opt into. When it is on:
+
+- It runs only for a password that already passed the length and character rules, so invalid input never causes a request.
+- It **fails open**: if the service answers with an error or takes longer than `PWNED_PASSWORDS_TIMEOUT` (2 seconds by default), the password is accepted and a warning is logged. Sign-up never depends on a service outside noosphere's control.
+- `PWNED_PASSWORDS_URL` can point at a self-hosted copy of the API instead of the public one.
+
+Tests run against a small fake of the range API, so they do not depend on the internet.
+
 ## Errors
 
 Errors fall into two kinds, and each is always handled the same way:

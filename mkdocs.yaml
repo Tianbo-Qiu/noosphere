@@ -107,4 +107,8 @@ nav:
       - PRECIS: standards/precis.md
       - Unicode normalization: standards/unicode-normalization.md
       - Password hashing: standards/password-hashing.md
+      - Breached password check: standards/breached-password-check.md
+      - Password strength estimation: standards/password-strength-estimation.md
+      - NIST SP 800-63: standards/nist-sp-800-63.md
+      - OWASP: standards/owasp.md
   - Test: test.md

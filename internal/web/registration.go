@@ -170,6 +170,14 @@ func (s *Server) postRegistration(w http.ResponseWriter, r *http.Request) {
 	} else if err != nil {
 		formErrors.Password = "This password contains a character that cannot be used."
 	}
+	if formErrors.Password == "" && s.cfg.PwnedPasswords != nil {
+		count, err := s.cfg.PwnedPasswords.Count(r.Context(), plain)
+		if err != nil {
+			log.Warn("breached password check failed, accepting the password", "flow_id", flow.ID, "err", err)
+		} else if count > 0 {
+			formErrors.Password = "This password has appeared in a data breach. Choose a different one."
+		}
+	}
 	if !formErrors.IsZero() {
 		log.Info("registration rejected: invalid input", "flow_id", flow.ID, "form_errors", formErrors)
 		s.saveFormErrorsAndRedirect(w, r, log, flow.ID, db.RegistrationFlowState{

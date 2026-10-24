@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/Tianbo-Qiu/noosphere/internal/logging"
+	"github.com/Tianbo-Qiu/noosphere/internal/pwned"
 	"github.com/Tianbo-Qiu/noosphere/internal/web"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -44,6 +45,9 @@ func run(ctx context.Context, cfg config, logger *slog.Logger) error {
 	}
 	logger.Info("database connected")
 
+	if cfg.PwnedPasswordsCheck {
+		cfg.Web.PwnedPasswords = pwned.NewClient(cfg.PwnedPasswordsURL, cfg.PwnedPasswordsTimeout)
+	}
 	srv, err := web.NewServer(cfg.Web, pool, logger)
 	if err != nil {
 		return fmt.Errorf("create server: %w", err)
@@ -53,6 +57,7 @@ func run(ctx context.Context, cfg config, logger *slog.Logger) error {
 		"addr", cfg.Addr,
 		"secure_cookies", cfg.Web.SecureCookies,
 		"flow_lifetime", cfg.Web.FlowLifetime,
+		"pwned_passwords_check", cfg.PwnedPasswordsCheck,
 	)
 	return http.ListenAndServe(cfg.Addr, srv.Handler())
 }

@@ -2,13 +2,19 @@ package web
 
 import (
 	"context"
+	"crypto/sha1"
+	"encoding/hex"
+	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/Tianbo-Qiu/noosphere/internal/db"
+	"github.com/Tianbo-Qiu/noosphere/internal/pwned"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	. "github.com/onsi/ginkgo/v2"
@@ -451,6 +457,86 @@ var _ = Describe("POST /registration", func() {
 		})
 	})
 
+	Context("with the breached password check on", func() {
+		It("shows the form again with an error when the password has been in a breach", func(ctx SpecContext) {
+			hibp := newFakePwnedPasswords(map[string]int{"correct horse battery staple": 391})
+			ts := newTestServerWithConfig(ctx, Config{FlowLifetime: time.Hour, PwnedPasswords: pwned.NewClient(hibp.url, time.Second)})
+			browser := newBrowser()
+			flow := startFlow(ctx, ts, browser)
+
+			resp := submit(browser, ts, flow, validForm(flow, "test@example.com"))
+
+			page := followBackToForm(browser, ts, flow, resp)
+			Expect(page).To(ContainSubstring(`<small id="password-error">This password has appeared in a data breach. Choose a different one.</small>`))
+			Expect(accountCount(ctx, ts)).To(BeZero())
+		})
+
+		It("creates the account when the password was never in a breach", func(ctx SpecContext) {
+			hibp := newFakePwnedPasswords(map[string]int{"password": 52372427})
+			ts := newTestServerWithConfig(ctx, Config{FlowLifetime: time.Hour, PwnedPasswords: pwned.NewClient(hibp.url, time.Second)})
+			browser := newBrowser()
+			flow := startFlow(ctx, ts, browser)
+
+			resp := submit(browser, ts, flow, validForm(flow, "test@example.com"))
+
+			Expect(resp.Header.Get("Location")).To(Equal("/registration/complete"))
+			Expect(hibp.requestCount()).To(Equal(1))
+		})
+
+		It("creates the account when the service fails, so sign-up never depends on it", func(ctx SpecContext) {
+			hibp := newFakePwnedPasswords(map[string]int{"correct horse battery staple": 391})
+			hibp.status = http.StatusServiceUnavailable
+			ts := newTestServerWithConfig(ctx, Config{FlowLifetime: time.Hour, PwnedPasswords: pwned.NewClient(hibp.url, time.Second)})
+			browser := newBrowser()
+			flow := startFlow(ctx, ts, browser)
+
+			resp := submit(browser, ts, flow, validForm(flow, "test@example.com"))
+
+			Expect(resp.Header.Get("Location")).To(Equal("/registration/complete"))
+			Expect(accountCount(ctx, ts)).To(Equal(1))
+		})
+
+		It("creates the account when the service is slower than the timeout", func(ctx SpecContext) {
+			hibp := newFakePwnedPasswords(map[string]int{"correct horse battery staple": 391})
+			hibp.delay = 300 * time.Millisecond
+			ts := newTestServerWithConfig(ctx, Config{FlowLifetime: time.Hour, PwnedPasswords: pwned.NewClient(hibp.url, 50*time.Millisecond)})
+			browser := newBrowser()
+			flow := startFlow(ctx, ts, browser)
+
+			resp := submit(browser, ts, flow, validForm(flow, "test@example.com"))
+
+			Expect(resp.Header.Get("Location")).To(Equal("/registration/complete"))
+			Expect(accountCount(ctx, ts)).To(Equal(1))
+		})
+
+		It("does not contact the service for a password that is already invalid", func(ctx SpecContext) {
+			hibp := newFakePwnedPasswords(nil)
+			ts := newTestServerWithConfig(ctx, Config{FlowLifetime: time.Hour, PwnedPasswords: pwned.NewClient(hibp.url, time.Second)})
+			browser := newBrowser()
+			flow := startFlow(ctx, ts, browser)
+			form := validForm(flow, "test@example.com")
+			form.Set("password", "1234567")
+
+			submit(browser, ts, flow, form)
+
+			Expect(hibp.requestCount()).To(BeZero())
+		})
+	})
+
+	Context("with the breached password check off, the default", func() {
+		It("accepts a breached password without contacting any service", func(ctx SpecContext) {
+			ts := newTestServer(ctx)
+			browser := newBrowser()
+			flow := startFlow(ctx, ts, browser)
+			form := validForm(flow, "test@example.com")
+			form.Set("password", "password") // seen 52,372,427 times in breaches
+
+			resp := submit(browser, ts, flow, form)
+
+			Expect(resp.Header.Get("Location")).To(Equal("/registration/complete"))
+		})
+	})
+
 	Context("after fixing a mistake", func() {
 		It("creates the account from the same flow and drops the old errors", func(ctx SpecContext) {
 			ts := newTestServer(ctx)
@@ -583,6 +669,51 @@ func followBackToForm(browser *http.Client, ts testServer, flow db.RegistrationF
 	form := get(browser, ts.URL+resp.Header.Get("Location"))
 	Expect(form.StatusCode).To(Equal(http.StatusOK))
 	return body(form)
+}
+
+// fakePwnedPasswords serves the Pwned Passwords range API for a fixed set of
+// breached passwords, and counts the requests it receives.
+type fakePwnedPasswords struct {
+	url    string
+	counts map[string]int // full uppercase SHA-1 hash → times seen
+	status int            // if set, answer with this status instead
+	delay  time.Duration  // wait this long before answering
+
+	requests atomic.Int32
+}
+
+// newFakePwnedPasswords starts a fake range API that knows the given
+// passwords and how often each was seen. It stops when the spec ends.
+func newFakePwnedPasswords(seen map[string]int) *fakePwnedPasswords {
+	fake := &fakePwnedPasswords{counts: map[string]int{}}
+	for password, n := range seen {
+		sum := sha1.Sum([]byte(password))
+		fake.counts[strings.ToUpper(hex.EncodeToString(sum[:]))] = n
+	}
+	ts := httptest.NewServer(fake)
+	DeferCleanup(ts.Close)
+	fake.url = ts.URL
+	return fake
+}
+
+func (f *fakePwnedPasswords) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	f.requests.Add(1)
+	time.Sleep(f.delay)
+	if f.status != 0 {
+		w.WriteHeader(f.status)
+		return
+	}
+	prefix := strings.TrimPrefix(r.URL.Path, "/range/")
+	for hash, n := range f.counts {
+		if strings.HasPrefix(hash, prefix) {
+			fmt.Fprintf(w, "%s:%d\r\n", hash[5:], n)
+		}
+	}
+}
+
+// requestCount returns how many requests the fake has received.
+func (f *fakePwnedPasswords) requestCount() int {
+	return int(f.requests.Load())
 }
 
 // submission is one form post: who sends it, where, and what.

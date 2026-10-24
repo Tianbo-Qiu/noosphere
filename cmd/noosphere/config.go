@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/Tianbo-Qiu/noosphere/internal/pwned"
 	"github.com/Tianbo-Qiu/noosphere/internal/web"
 )
 
@@ -17,6 +18,12 @@ type config struct {
 	LogFormat   string
 	LogLevel    string
 	Web         web.Config
+
+	// PwnedPasswordsCheck turns on the breached password check. It is off by
+	// default because it sends requests to an outside service.
+	PwnedPasswordsCheck   bool
+	PwnedPasswordsURL     string
+	PwnedPasswordsTimeout time.Duration
 }
 
 // loadConfig reads the settings from environment variables, fills in the
@@ -30,6 +37,14 @@ func loadConfig() (config, error) {
 	if err != nil {
 		return config{}, fmt.Errorf("COOKIE_SECURE: %w", err)
 	}
+	pwnedCheck, err := strconv.ParseBool(getenv("PWNED_PASSWORDS_CHECK", "false"))
+	if err != nil {
+		return config{}, fmt.Errorf("PWNED_PASSWORDS_CHECK: %w", err)
+	}
+	pwnedTimeout, err := time.ParseDuration(getenv("PWNED_PASSWORDS_TIMEOUT", "2s"))
+	if err != nil {
+		return config{}, fmt.Errorf("PWNED_PASSWORDS_TIMEOUT: %w", err)
+	}
 	return config{
 		DatabaseURL: databaseURL,
 		Addr:        getenv("ADDR", ":8080"),
@@ -39,6 +54,9 @@ func loadConfig() (config, error) {
 			SecureCookies: secureCookies,
 			FlowLifetime:  time.Hour,
 		},
+		PwnedPasswordsCheck:   pwnedCheck,
+		PwnedPasswordsURL:     getenv("PWNED_PASSWORDS_URL", pwned.DefaultURL),
+		PwnedPasswordsTimeout: pwnedTimeout,
 	}, nil
 }
 

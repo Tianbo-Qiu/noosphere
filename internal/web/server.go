@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/Tianbo-Qiu/noosphere/internal/db"
+	"github.com/Tianbo-Qiu/noosphere/internal/pwned"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -18,6 +19,9 @@ type Config struct {
 	SecureCookies bool
 	// FlowLifetime is how long a registration flow stays valid.
 	FlowLifetime time.Duration
+	// PwnedPasswords, if set, rejects new passwords that have been seen in a
+	// data breach. If the check itself fails, the password is accepted.
+	PwnedPasswords *pwned.Client
 }
 
 type Server struct {

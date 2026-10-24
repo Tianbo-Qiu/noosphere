@@ -25,7 +25,8 @@ cmd/noosphere/          the server binary: reads settings, builds the logger, th
 internal/web/           HTTP: routes, middleware, handlers, templates and static files
 internal/db/            storage: generated query code plus hand-written transactions
 internal/identifier/    normalization of login identifiers such as emails
-internal/password/      password hashing
+internal/password/      password rules and hashing
+internal/pwned/         breached password check against the Pwned Passwords API
 internal/logging/       builds the logger from its format and level
 internal/dbtest/        test-only: a migrated database per test package
 db/migrations/          schema changes, applied in order
@@ -60,6 +61,9 @@ The server reads its settings from environment variables at startup and stops if
 | `COOKIE_SECURE` | `true` | Mark cookies `Secure` (HTTPS only); `make run` sets `false` for local HTTP |
 | `LOG_FORMAT` | `text` | `text` or `json` |
 | `LOG_LEVEL` | `info` | `debug`, `info`, `warn` or `error` |
+| `PWNED_PASSWORDS_CHECK` | `false` | Reject new passwords seen in data breaches, using the Pwned Passwords API |
+| `PWNED_PASSWORDS_URL` | `https://api.pwnedpasswords.com` | The API to ask, for example a self-hosted mirror |
+| `PWNED_PASSWORDS_TIMEOUT` | `2s` | How long to wait for an answer before accepting the password anyway |
 
 ## Logging
 
