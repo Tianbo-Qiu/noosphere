@@ -98,6 +98,14 @@ A form error is saved in the flow's `state` (the typed values and one message pe
 
 The details of a `500` are only logged, never shown. Plain-text `http.Error` is used in one place: when rendering a page fails, since rendering is then what broke.
 
+## Cross-origin protection
+
+Every form post, and any other request that could change something, is first checked for where it came from. Browsers label each request with the [`Sec-Fetch-Site`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Sec-Fetch-Site) header (`same-origin`, `same-site`, `cross-site` or `none`), and older ones with [`Origin`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Origin). A post that a browser marks as coming from another site is rejected with the "Request rejected" page and a `403`, before the form is even read.
+
+This uses Go's own [`http.CrossOriginProtection`](https://pkg.go.dev/net/http#CrossOriginProtection) (Go 1.25), which checks `Sec-Fetch-Site`, "available in all browsers since 2023", and falls back to comparing the `Origin` header's host with the request's. `GET`, `HEAD` and `OPTIONS` are always allowed, which is why no `GET` handler may change state. A request with neither header comes from something other than a browser, such as `curl`, and is allowed; such a client cannot carry a victim's cookies, so it is not a CSRF risk.
+
+It is a second, independent layer in front of the CSRF token: the [OWASP CSRF cheat sheet](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html) calls `Sec-Fetch-Site` "the most useful Fetch Metadata header for blocking CSRF-like cross-origin requests" and requires an `Origin` check as the fallback, which is exactly what the Go middleware does. Rejections are logged as warnings with the request's `Sec-Fetch-Site` and `Origin` values.
+
 ## CSRF cookie
 
 Each browser gets one random CSRF token, in an `HttpOnly`, `SameSite=Lax` cookie that is `Secure` outside local development. Every flow the browser starts stores a copy, and a form post must carry the same token as both the cookie and the flow. One token per browser, rather than per flow, lets a user have sign-up open in two tabs.

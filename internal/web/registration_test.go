@@ -272,6 +272,37 @@ var _ = Describe("POST /registration", func() {
 		})
 	})
 
+	Context("sent from another site", func() {
+		DescribeTable("is rejected before the form is read",
+			func(ctx SpecContext, header, value string) {
+				ts := newTestServer(ctx)
+				browser := newBrowser()
+				flow := startFlow(ctx, ts, browser)
+
+				resp := postWithHeader(browser, ts.URL+"/registration?flow="+flow.ID.String(), validForm(flow, "test@example.com"), header, value)
+
+				expectRejected(resp)
+				Expect(accountCount(ctx, ts)).To(BeZero())
+			},
+			Entry("Sec-Fetch-Site says cross-site", "Sec-Fetch-Site", "cross-site"),
+			Entry("Origin names another host", "Origin", "https://attacker.example"),
+		)
+
+		DescribeTable("is accepted when the browser says it came from this site",
+			func(ctx SpecContext, header, value string) {
+				ts := newTestServer(ctx)
+				browser := newBrowser()
+				flow := startFlow(ctx, ts, browser)
+
+				resp := postWithHeader(browser, ts.URL+"/registration?flow="+flow.ID.String(), validForm(flow, "test@example.com"), header, value)
+
+				Expect(resp.Header.Get("Location")).To(Equal("/registration/complete"))
+			},
+			Entry("Sec-Fetch-Site says same-origin", "Sec-Fetch-Site", "same-origin"),
+			Entry("Sec-Fetch-Site says none, as for a typed address or bookmark", "Sec-Fetch-Site", "none"),
+		)
+	})
+
 	Context("failing the CSRF check", func() {
 		It("rejects a post without the csrf cookie", func(ctx SpecContext) {
 			ts := newTestServer(ctx)
@@ -827,6 +858,21 @@ func closedPool(ctx context.Context) *pgxpool.Pool {
 	Expect(err).NotTo(HaveOccurred())
 	pool.Close()
 	return pool
+}
+
+// postWithHeader posts a form with one extra request header, the way a
+// browser adds Sec-Fetch-Site or Origin.
+func postWithHeader(client *http.Client, target string, form url.Values, header, value string) *http.Response {
+	GinkgoHelper()
+	req, err := http.NewRequest(http.MethodPost, target, strings.NewReader(form.Encode()))
+	Expect(err).NotTo(HaveOccurred())
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set(header, value)
+
+	resp, err := client.Do(req)
+	Expect(err).NotTo(HaveOccurred())
+	DeferCleanup(resp.Body.Close)
+	return resp
 }
 
 // submit posts the registration form for the flow.

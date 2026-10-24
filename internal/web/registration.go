@@ -240,6 +240,18 @@ func (s *Server) renderInternalError(w http.ResponseWriter) {
 	})
 }
 
+// rejectCrossOrigin answers a form post or other unsafe request that came
+// from another site.
+func (s *Server) rejectCrossOrigin(w http.ResponseWriter, r *http.Request) {
+	s.requestLogger(r).Warn("request rejected: cross-origin",
+		"method", r.Method,
+		"path", r.URL.Path,
+		"sec_fetch_site", r.Header.Get("Sec-Fetch-Site"),
+		"origin", r.Header.Get("Origin"),
+	)
+	s.renderRejected(w)
+}
+
 // renderRejected shows the page for a form post that failed the CSRF check.
 func (s *Server) renderRejected(w http.ResponseWriter) {
 	s.render(w, http.StatusForbidden, "error", errorPage{

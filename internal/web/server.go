@@ -54,9 +54,15 @@ func (s *Server) requestLogger(r *http.Request) *slog.Logger {
 }
 
 func (s *Server) Handler() http.Handler {
+	// Browsers label each request with where it came from; this rejects
+	// form posts and other unsafe requests sent from another site.
+	crossOrigin := http.NewCrossOriginProtection()
+	crossOrigin.SetDenyHandler(http.HandlerFunc(s.rejectCrossOrigin))
+
 	r := chi.NewRouter()
 	r.Use(withRequestID)
 	r.Use(s.withAccessLog)
+	r.Use(crossOrigin.Handler)
 	r.Use(middleware.RedirectSlashes)
 	r.Handle("/static/*", http.FileServerFS(staticFS))
 	r.Get("/registration", s.getRegistration)
