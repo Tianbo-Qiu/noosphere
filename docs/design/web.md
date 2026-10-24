@@ -34,6 +34,25 @@ r.Get("/registration", s.getRegistration)
 
 `withRequestID` gives each request an ID for logging, and `withAccessLog` writes one log line per request with its status and duration (see [Overview](overview.md#logging)). Unknown paths get `404` and wrong methods `405` from the router. A page URL with a trailing slash, such as `/registration/`, is redirected to the URL without it ([`middleware.RedirectSlashes`](https://pkg.go.dev/github.com/go-chi/chi/v5/middleware#RedirectSlashes)), so typed or autocompleted addresses still work.
 
+## Form fields
+
+The registration form asks for as little as it needs, and says plainly what is optional.
+
+| Field | Required | Stored as |
+|---|---|---|
+| Email | yes | The profile keeps it as typed, without surrounding spaces; the login identifier is normalized with [PRECIS](../standards/precis.md) |
+| First name | no | As typed, without surrounding spaces |
+| Last name | no | As typed, without surrounding spaces |
+| Password | yes | Only as an [Argon2id hash](../standards/password-hashing.md) |
+
+The names are optional because many people do not fit a first-and-last-name pattern. The W3C's guidance on [personal names around the world](https://www.w3.org/International/questions/qa-personal-names) says "don't require that people supply a family name": many people in parts of Southern India, Malaysia and Indonesia have only a given name, and Icelanders have no family name. A required field would make them type something false.
+
+Optional fields say so in their label, as in "First name (optional)", and required fields have plain labels. This follows the [GOV.UK Design System](https://design-system.service.gov.uk/patterns/question-pages/): "add '(optional)' to the labels of optional fields" and "never mark mandatory fields with asterisks". The word is part of the label, so screen readers read it out with the field, and nobody has to look up what a symbol means.
+
+Each field carries the standard [`autocomplete`](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Attributes/autocomplete) value (`email`, `given-name`, `family-name`, `new-password`), so browsers and password managers can fill the form and offer to generate a strong password. When the form is shown again after an error, the typed values come back, but the password field is always empty: the password is never stored in the flow or sent back in a page.
+
+Surrounding spaces are removed on the server. Browsers already strip them from `type="email"` fields before submitting, but scripts and other clients can send anything, so the server does not rely on the browser.
+
 ## Errors
 
 Errors fall into two kinds, and each is always handled the same way:

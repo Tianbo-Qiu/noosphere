@@ -75,6 +75,8 @@ var _ = Describe("GET /registration", func() {
 			Expect(page).To(ContainSubstring(`name="email"`))
 			Expect(page).To(ContainSubstring(`name="first_name"`))
 			Expect(page).To(ContainSubstring(`name="last_name"`))
+			Expect(page).To(ContainSubstring(`<label for="first_name">First name (optional)</label>`))
+			Expect(page).To(ContainSubstring(`<label for="last_name">Last name (optional)</label>`))
 			Expect(page).To(ContainSubstring(`name="password"`))
 		})
 	})
