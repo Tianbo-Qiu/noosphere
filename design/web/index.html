@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../assets/favicon.svg">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
     
     
       
@@ -31,10 +31,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -634,6 +634,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Errors
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#csrf-cookie" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -959,6 +970,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Errors
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#csrf-cookie" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1038,7 +1060,32 @@
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="nx">r</span><span class="p">.</span><span class="nx">Handle</span><span class="p">(</span><span class="s">"/static/*"</span><span class="p">,</span><span class="w"> </span><span class="nx">http</span><span class="p">.</span><span class="nx">FileServerFS</span><span class="p">(</span><span class="nx">staticFS</span><span class="p">))</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="nx">r</span><span class="p">.</span><span class="nx">Get</span><span class="p">(</span><span class="s">"/registration"</span><span class="p">,</span><span class="w"> </span><span class="nx">s</span><span class="p">.</span><span class="nx">getRegistration</span><span class="p">)</span>
 </span></code></pre></div>
-<p><code>withRequestID</code> gives each request an ID for logging, and <code>withAccessLog</code> writes one log line per request with its status and duration (see <a href="../overview/#logging">Overview</a>). Unknown paths get <code>404</code> and wrong methods <code>405</code> from the router.</p>
+<p><code>withRequestID</code> gives each request an ID for logging, and <code>withAccessLog</code> writes one log line per request with its status and duration (see <a href="../overview/#logging">Overview</a>). Unknown paths get <code>404</code> and wrong methods <code>405</code> from the router. A page URL with a trailing slash, such as <code>/registration/</code>, is redirected to the URL without it (<a href="https://pkg.go.dev/github.com/go-chi/chi/v5/middleware#RedirectSlashes"><code>middleware.RedirectSlashes</code></a>), so typed or autocompleted addresses still work.</p>
+<h2 id="errors">Errors<a class="headerlink" href="#errors" title="Permanent link">&para;</a></h2>
+<p>Errors fall into two kinds, and each is always handled the same way:</p>
+<table>
+<thead>
+<tr>
+<th>Kind</th>
+<th>Examples</th>
+<th>Response</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>The user can fix it</td>
+<td>email already registered, invalid email, empty password</td>
+<td>The form again, with what the user typed (never the password) and a message under each invalid field</td>
+</tr>
+<tr>
+<td>The form cannot continue</td>
+<td>CSRF check failed, cookies blocked (<code>403</code>), database unavailable (<code>500</code>)</td>
+<td>An error page in the site layout, with a link to start again</td>
+</tr>
+</tbody>
+</table>
+<p>A form error is saved in the flow's <code>state</code> (the typed values and one message per field), and the browser is redirected back to the form, which renders from the flow. So every page a user sees comes from a <code>GET</code>, and refreshing it never resubmits the form. The invalid field is marked with <code>aria-invalid="true"</code> and linked to its message with <code>aria-describedby</code>, which screen readers announce and Pico styles in red. Checks that cost nothing run first and report together, so a user sees every simple mistake at once; the slow password hash and the database's uniqueness check run only after those pass.</p>
+<p>The details of a <code>500</code> are only logged, never shown. Plain-text <code>http.Error</code> is used in one place: when rendering a page fails, since rendering is then what broke.</p>
 <h2 id="csrf-cookie">CSRF cookie<a class="headerlink" href="#csrf-cookie" title="Permanent link">&para;</a></h2>
 <p>Each browser gets one random CSRF token, in an <code>HttpOnly</code>, <code>SameSite=Lax</code> cookie that is <code>Secure</code> outside local development. Every flow the browser starts stores a copy, and a form post must carry the same token as both the cookie and the flow. One token per browser, rather than per flow, lets a user have sign-up open in two tabs.</p>
 <p>A browser that does not send the cookie back would otherwise get a new flow, and a new cookie, on every request. Instead it gets a <code>403</code> page asking it to allow cookies.</p>
@@ -1157,10 +1204,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.instant", "navigation.tracking", "navigation.sections", "navigation.indexes", "navigation.top", "navigation.footer", "toc.follow", "search.suggest", "search.highlight", "content.code.copy", "content.code.annotate", "content.tabs.link", "content.action.edit", "content.tooltips"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.instant", "navigation.tracking", "navigation.sections", "navigation.indexes", "navigation.top", "navigation.footer", "toc.follow", "search.suggest", "search.highlight", "content.code.copy", "content.code.annotate", "content.tabs.link", "content.action.edit", "content.tooltips"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.c21346df.min.js"></script>
       
         <script src="../../javascripts/mathjax.js"></script>
       
