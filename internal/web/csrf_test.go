@@ -26,7 +26,7 @@ var _ = Describe("maskToken and unmaskToken", func() {
 		},
 		Entry("empty", ""),
 		Entry("not base64", "not base64!"),
-		Entry("an odd number of bytes", "AAAA"), // decodes to 3 bytes, which cannot split into two halves
+		Entry("an odd number of bytes", "AAAA"),  // decodes to 3 bytes, which cannot split into two halves
 		Entry("unused trailing bits set", "AAB"), // two bytes, whose canonical encoding is "AAA"
 	)
 
