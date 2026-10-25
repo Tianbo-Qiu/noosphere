@@ -72,7 +72,7 @@ func (s *Server) getRegistration(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-	if cookie.Value != flow.CsrfToken {
+	if !tokensEqual(cookie.Value, flow.CsrfToken) {
 		log.Warn("registration flow belongs to another browser", "flow_id", flow.ID)
 		s.startRegistration(w, r)
 		return
@@ -82,7 +82,7 @@ func (s *Server) getRegistration(w http.ResponseWriter, r *http.Request) {
 	s.render(w, http.StatusOK, "registration", registrationPage{
 		Title:        "Sign up",
 		Action:       "/registration?flow=" + flow.ID.String(),
-		CSRFToken:    flow.CsrfToken,
+		CSRFToken:    maskToken(flow.CsrfToken),
 		Email:        flow.State.Traits.Email,
 		FirstName:    flow.State.Traits.FirstName,
 		LastName:     flow.State.Traits.LastName,
@@ -138,12 +138,13 @@ func (s *Server) postRegistration(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cookie, err := r.Cookie(s.csrfCookie())
-	if err != nil || cookie.Value != flow.CsrfToken {
+	if err != nil || !tokensEqual(cookie.Value, flow.CsrfToken) {
 		log.Warn("registration rejected: csrf cookie missing or does not match the flow", "flow_id", flow.ID)
 		s.renderRejected(w)
 		return
 	}
-	if r.PostFormValue("csrf_token") != flow.CsrfToken {
+	submitted, err := unmaskToken(r.PostFormValue("csrf_token"))
+	if err != nil || !tokensEqual(submitted, flow.CsrfToken) {
 		log.Warn("registration rejected: form csrf token does not match the flow", "flow_id", flow.ID)
 		s.renderRejected(w)
 		return

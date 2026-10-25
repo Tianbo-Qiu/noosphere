@@ -112,6 +112,21 @@ Each browser gets one random CSRF token, in an `HttpOnly`, `SameSite=Lax` cookie
 
 A browser that does not send the cookie back would otherwise get a new flow, and a new cookie, on every request. Instead it gets a `403` page asking it to allow cookies.
 
+## Masked CSRF token
+
+The hidden `csrf_token` field in a form never contains the token itself. Each time the page is rendered, the server picks random bytes as long as the token, XORs them with the token, and puts the random bytes followed by the result in the field, encoded as URL-safe base64. For the token `47ISB3EWWBGSHHZI4RDKWEB3DG`, two renders of the same form produced:
+
+```
+LJdYMr9EywtT_VLfyYxC5m6nUldJOOyfuY0YoBFh_XeOXAS_FYyBxBivWvUWHB59rqz9yg
+G5eSYzW34b_CHrQQx3PzM-JqCW4yocECIqUvoNswd4Sk6JVc80OPO6l61jhNJWXkgzFm4g
+```
+
+On a form post, the server splits the field into its two halves and XORs them again, which gives back the token, then compares it with the cookie and the flow's copy. Anything that does not decode, does not split into two equal halves, or is not in canonical base64 is rejected like a wrong token.
+
+This defends against [BREACH](https://en.wikipedia.org/wiki/BREACH), an attack on compressed HTTPS responses. A page that contains both a secret and text an attacker can influence, such as the email shown again after an error, leaks the secret through its compressed size: guesses that match part of the secret compress better. noosphere does not compress pages itself, but a reverse proxy or CDN in front of it usually does, since [nginx](https://nginx.org/en/docs/http/ngx_http_gzip_module.html) and [Caddy](https://caddyserver.com/docs/caddyfile/directives/encode) both compress HTML by default. With masking, the bytes in the page change on every response, so there is nothing stable for the attack to recover, wherever compression happens.
+
+All token comparisons use [`crypto/subtle.ConstantTimeCompare`](https://pkg.go.dev/crypto/subtle#ConstantTimeCompare), which takes the same time however much of a guess is right, so response times reveal nothing about the token.
+
 ## Layout
 
 ```

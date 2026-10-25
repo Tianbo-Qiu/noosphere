@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"regexp"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -90,7 +91,7 @@ var _ = Describe("GET /registration", func() {
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 			page := body(resp)
 			Expect(page).To(ContainSubstring(`<form method="post" action="/registration?flow=` + flow.ID.String() + `">`))
-			Expect(page).To(ContainSubstring(`<input type="hidden" name="csrf_token" value="` + flow.CsrfToken + `">`))
+			Expect(unmaskToken(formToken(page))).To(Equal(flow.CsrfToken))
 			Expect(page).To(ContainSubstring(`name="email"`))
 			Expect(page).To(ContainSubstring(`name="first_name"`))
 			Expect(page).To(ContainSubstring(`name="last_name"`))
@@ -100,6 +101,35 @@ var _ = Describe("GET /registration", func() {
 			Expect(page).To(ContainSubstring(`spellcheck="false" autocapitalize="none" data-password-toggle`))
 			Expect(page).To(ContainSubstring(`<script src="/static/password-toggle.js" defer></script>`))
 			Expect(page).To(ContainSubstring(`name="password"`))
+		})
+	})
+
+	Context("the form's csrf field", func() {
+		It("is different on every render of the same flow, and never the raw token", func(ctx SpecContext) {
+			ts := newTestServer(ctx)
+			browser := newBrowser()
+			flow := startFlow(ctx, ts, browser)
+
+			first := formToken(body(get(browser, ts.URL+"/registration?flow="+flow.ID.String())))
+			second := formToken(body(get(browser, ts.URL+"/registration?flow="+flow.ID.String())))
+
+			Expect(first).NotTo(Equal(second))
+			Expect(first).NotTo(ContainSubstring(flow.CsrfToken))
+			Expect(second).NotTo(ContainSubstring(flow.CsrfToken))
+		})
+
+		It("is accepted from any render", func(ctx SpecContext) {
+			ts := newTestServer(ctx)
+			browser := newBrowser()
+			flow := startFlow(ctx, ts, browser)
+			older := formToken(body(get(browser, ts.URL+"/registration?flow="+flow.ID.String())))
+			get(browser, ts.URL+"/registration?flow="+flow.ID.String())
+			form := validForm(flow, "test@example.com")
+			form.Set("csrf_token", older)
+
+			resp := submit(browser, ts, flow, form)
+
+			Expect(resp.Header.Get("Location")).To(Equal("/registration/complete"))
 		})
 	})
 
@@ -176,7 +206,7 @@ var _ = Describe("POST /registration", func() {
 			flow := startFlow(ctx, ts, browser)
 
 			resp := submit(browser, ts, flow, url.Values{
-				"csrf_token": {flow.CsrfToken},
+				"csrf_token": {maskToken(flow.CsrfToken)},
 				"email":      {"test@example.com"},
 				"first_name": {"Test"},
 				"last_name":  {"User"},
@@ -231,7 +261,7 @@ var _ = Describe("POST /registration", func() {
 			flow := startFlow(ctx, ts, browser)
 
 			submit(browser, ts, flow, url.Values{
-				"csrf_token": {flow.CsrfToken},
+				"csrf_token": {maskToken(flow.CsrfToken)},
 				"email":      {"test@example.com"},
 				"password":   {"correct horse battery staple"},
 			})
@@ -344,6 +374,34 @@ var _ = Describe("POST /registration", func() {
 			flow := startFlow(ctx, ts, browser)
 			form := validForm(flow, "test@example.com")
 			form.Del("csrf_token")
+
+			resp := submit(browser, ts, flow, form)
+
+			expectRejected(resp)
+			Expect(accountCount(ctx, ts)).To(BeZero())
+		})
+
+		It("rejects the raw token, which a page never contains", func(ctx SpecContext) {
+			ts := newTestServer(ctx)
+			browser := newBrowser()
+			flow := startFlow(ctx, ts, browser)
+			form := validForm(flow, "test@example.com")
+			form.Set("csrf_token", flow.CsrfToken)
+
+			resp := submit(browser, ts, flow, form)
+
+			expectRejected(resp)
+			Expect(accountCount(ctx, ts)).To(BeZero())
+		})
+
+		It("rejects a masked token with one character changed", func(ctx SpecContext) {
+			ts := newTestServer(ctx)
+			browser := newBrowser()
+			flow := startFlow(ctx, ts, browser)
+			form := validForm(flow, "test@example.com")
+			masked := []byte(form.Get("csrf_token"))
+			masked[10] = changedBase64Char(masked[10])
+			form.Set("csrf_token", string(masked))
 
 			resp := submit(browser, ts, flow, form)
 
@@ -770,7 +828,7 @@ type account struct {
 // given email and the password "correct horse battery staple".
 func validForm(flow db.RegistrationFlow, email string) url.Values {
 	return url.Values{
-		"csrf_token": {flow.CsrfToken},
+		"csrf_token": {maskToken(flow.CsrfToken)},
 		"email":      {email},
 		"first_name": {"Test"},
 		"last_name":  {"User"},
@@ -885,6 +943,22 @@ func postWithHeader(client *http.Client, target string, form url.Values, header,
 	Expect(err).NotTo(HaveOccurred())
 	DeferCleanup(resp.Body.Close)
 	return resp
+}
+
+// formToken returns the value of the form's hidden csrf_token field.
+func formToken(page string) string {
+	GinkgoHelper()
+	match := regexp.MustCompile(`name="csrf_token" value="([^"]+)"`).FindStringSubmatch(page)
+	Expect(match).To(HaveLen(2), "page has no csrf_token field")
+	return match[1]
+}
+
+// changedBase64Char returns a different URL-safe base64 character.
+func changedBase64Char(c byte) byte {
+	if c == 'A' {
+		return 'B'
+	}
+	return 'A'
 }
 
 // submit posts the registration form for the flow.
