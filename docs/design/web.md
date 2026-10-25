@@ -112,6 +112,24 @@ Each browser gets one random CSRF token, in an `HttpOnly`, `SameSite=Lax` cookie
 
 A browser that does not send the cookie back would otherwise get a new flow, and a new cookie, on every request. Instead it gets a `403` page asking it to allow cookies.
 
+## Compression
+
+noosphere does not compress its responses. Compression is left to whatever runs in front of it in a deployment, such as a reverse proxy or a CDN.
+
+**What compression does.** The server compresses a response before sending it, and the browser decompresses it. Text shrinks a lot because it repeats itself; with gzip at level 5, noosphere's files measured:
+
+| File | Uncompressed | Gzipped |
+|---|---|---|
+| `pico.classless.min.css` | 71,040 bytes | 10,684 bytes |
+| `app.css` | 1,598 bytes | 714 bytes |
+| `password-toggle.js` | 1,729 bytes | 891 bytes |
+
+The browser lists what it can decode in `Accept-Encoding`, the server names what it used in `Content-Encoding`, and `Vary: Accept-Encoding` keeps caches from mixing the two versions.
+
+**Why not in the application.** The usual deployment already has a reverse proxy or CDN in front of the server, and those compress with less effort and more formats (gzip, Brotli, zstd) than the app would. On a developer's machine, size does not matter. Doing it in the app as well would add code and still leave the proxy's settings to decide what is actually sent.
+
+**What has to be safe instead.** Proxies compress HTML by default: [nginx](https://nginx.org/en/docs/http/ngx_http_gzip_module.html) says "responses with the 'text/html' type are always compressed", and [Caddy](https://caddyserver.com/docs/caddyfile/directives/encode) compresses all `text/*` responses. Compressed HTML is open to [BREACH](https://en.wikipedia.org/wiki/BREACH) when a page contains a secret and text an attacker can influence, because guesses that match the secret make the response smaller. The sign-up page is such a page: it carries the CSRF token and shows the typed email again after an error. Rather than depend on every deployment's proxy settings, the page itself is made safe: the CSRF token in it is masked with fresh random bytes on every response ([Masked CSRF token](#masked-csrf-token)), so compression has nothing stable to reveal. noosphere can then sit behind any proxy, with compression on or off.
+
 ## Masked CSRF token
 
 The hidden `csrf_token` field in a form never contains the token itself. Each time the page is rendered, the server picks random bytes as long as the token, XORs them with the token, and puts the random bytes followed by the result in the field, encoded as URL-safe base64. For the token `47ISB3EWWBGSHHZI4RDKWEB3DG`, two renders of the same form produced:
