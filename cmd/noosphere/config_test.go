@@ -10,7 +10,7 @@ import (
 
 var _ = Describe("loadConfig", func() {
 	BeforeEach(func() {
-		for _, key := range []string{"DATABASE_URL", "ADDR", "COOKIE_SECURE", "LOG_FORMAT", "LOG_LEVEL", "PASSWORD_CONTEXT_CHECK", "PWNED_PASSWORDS_CHECK", "PWNED_PASSWORDS_URL", "PWNED_PASSWORDS_TIMEOUT"} {
+		for _, key := range []string{"DATABASE_URL", "ADDR", "COOKIE_SECURE", "LOG_FORMAT", "LOG_LEVEL", "PASSWORD_CONTEXT_CHECK", "PASSWORD_STRENGTH_METER", "PWNED_PASSWORDS_CHECK", "PWNED_PASSWORDS_URL", "PWNED_PASSWORDS_TIMEOUT"} {
 			GinkgoT().Setenv(key, "")
 		}
 	})
@@ -41,6 +41,7 @@ var _ = Describe("loadConfig", func() {
 		GinkgoT().Setenv("LOG_FORMAT", "json")
 		GinkgoT().Setenv("LOG_LEVEL", "debug")
 		GinkgoT().Setenv("PASSWORD_CONTEXT_CHECK", "false")
+		GinkgoT().Setenv("PASSWORD_STRENGTH_METER", "true")
 		GinkgoT().Setenv("PWNED_PASSWORDS_CHECK", "false")
 		GinkgoT().Setenv("PWNED_PASSWORDS_URL", "http://127.0.0.1:9001")
 		GinkgoT().Setenv("PWNED_PASSWORDS_TIMEOUT", "500ms")
@@ -49,6 +50,7 @@ var _ = Describe("loadConfig", func() {
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(cfg.Web.PasswordContextCheck).To(BeFalse())
+		Expect(cfg.Web.PasswordStrengthMeter).To(BeTrue())
 		Expect(cfg.PwnedPasswordsCheck).To(BeFalse())
 		Expect(cfg.PwnedPasswordsURL).To(Equal("http://127.0.0.1:9001"))
 		Expect(cfg.PwnedPasswordsTimeout).To(Equal(500 * time.Millisecond))
@@ -101,6 +103,15 @@ var _ = Describe("loadConfig", func() {
 		_, err := loadConfig()
 
 		Expect(err).To(MatchError(HavePrefix("PASSWORD_CONTEXT_CHECK: ")))
+	})
+
+	It("rejects a PASSWORD_STRENGTH_METER that is not a boolean", func() {
+		GinkgoT().Setenv("DATABASE_URL", "postgres://test:test@localhost:5432/test")
+		GinkgoT().Setenv("PASSWORD_STRENGTH_METER", "on")
+
+		_, err := loadConfig()
+
+		Expect(err).To(MatchError(HavePrefix("PASSWORD_STRENGTH_METER: ")))
 	})
 
 	It("rejects a PWNED_PASSWORDS_CHECK that is not a boolean", func() {

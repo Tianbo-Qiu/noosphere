@@ -43,6 +43,10 @@ func loadConfig() (config, error) {
 	if err != nil {
 		return config{}, fmt.Errorf("PASSWORD_CONTEXT_CHECK: %w", err)
 	}
+	strengthMeter, err := strconv.ParseBool(getenv("PASSWORD_STRENGTH_METER", "false"))
+	if err != nil {
+		return config{}, fmt.Errorf("PASSWORD_STRENGTH_METER: %w", err)
+	}
 	pwnedCheck, err := strconv.ParseBool(getenv("PWNED_PASSWORDS_CHECK", "true"))
 	if err != nil {
 		return config{}, fmt.Errorf("PWNED_PASSWORDS_CHECK: %w", err)
@@ -57,9 +61,10 @@ func loadConfig() (config, error) {
 		LogFormat:   getenv("LOG_FORMAT", "text"),
 		LogLevel:    getenv("LOG_LEVEL", "info"),
 		Web: web.Config{
-			SecureCookies:        secureCookies,
-			FlowLifetime:         time.Hour,
-			PasswordContextCheck: contextCheck,
+			SecureCookies:         secureCookies,
+			FlowLifetime:          time.Hour,
+			PasswordContextCheck:  contextCheck,
+			PasswordStrengthMeter: strengthMeter,
 		},
 		PwnedPasswordsCheck:   pwnedCheck,
 		PwnedPasswordsURL:     getenv("PWNED_PASSWORDS_URL", pwned.DefaultURL),

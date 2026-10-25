@@ -19,6 +19,7 @@
   <label for="password">Password</label>
   <input id="password" name="password" type="password" autocomplete="new-password" required
     spellcheck="false" autocapitalize="none" data-password-toggle
+    {{- if .PasswordStrengthMeter}} data-password-strength{{end}}
     aria-describedby="{{if .Errors.Password}}password-error{{else}}password-hint{{end}}"
     {{- with .Errors.Password}} aria-invalid="true"{{end}}>
   {{- with .Errors.Password}}
@@ -29,4 +30,10 @@
 
   <button type="submit">Sign up</button>
 </form>
+{{- if .PasswordStrengthMeter}}
+<script src="/static/zxcvbn-ts/core.js" defer></script>
+<script src="/static/zxcvbn-ts/language-common.js" defer></script>
+<script src="/static/zxcvbn-ts/language-en.js" defer></script>
+<script src="/static/password-strength.js" defer></script>
+{{- end}}
 {{end}}

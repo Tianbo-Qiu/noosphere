@@ -65,6 +65,41 @@ The password field has an eye icon at its right end, so people can check what th
 
 Switching a field between hidden and visible needs JavaScript, so the button is added by `static/password-toggle.js`, served by noosphere itself. The HTML only marks the field with `data-password-toggle`; without JavaScript it stays an ordinary password field. The script is a file rather than inline code, so a strict content security policy that allows only the site's own scripts remains possible.
 
+## Password strength meter
+
+When `PASSWORD_STRENGTH_METER=true`, a meter under the password field shows how hard the typed password would be to guess, with a short explanation. It is off by default. It is advice only: the server enforces the password rules (length, the context check and the breached password check), not a score. [NIST SP 800-63B-4](../standards/nist-sp-800-63.md) asks for guidance that helps people choose a strong password, and a meter is one form of it.
+
+The estimate comes from [zxcvbn-ts](https://zxcvbn-ts.github.io/zxcvbn/) (MIT license), the maintained TypeScript version of Dropbox's zxcvbn. Instead of counting character types, it estimates how many guesses an attacker would need: it splits the password into pieces it recognizes, such as common passwords, dictionary words, names, keyboard runs, dates and repeats, and adds up the cost of guessing each piece. It turns the estimate into a score from 0 to 4, shown with the words from its documentation:
+
+| Score | Shown as | Estimated guesses |
+|---|---|---|
+| 0 | Too guessable | fewer than 10^3 |
+| 1 | Very guessable | fewer than 10^6 |
+| 2 | Somewhat guessable | fewer than 10^8 |
+| 3 | Safely unguessable | fewer than 10^10 |
+| 4 | Very unguessable | 10^10 or more |
+
+The values of the other fields, such as the email and the names, are passed to zxcvbn as user inputs, so a password made of them scores low, like in the context check. With `test@example.com` in the email field, the meter shows:
+
+| Password | Score | Text |
+|---|---|---|
+| `password` | 0 | Too guessable. This is a heavily used password. Add more words that are less common. |
+| `test@example.com` | 0 | Too guessable. There should not be any personal or page related data. Add more words that are less common. |
+| `margaretgarden` | 2 | Somewhat guessable. This is similar to a commonly used password. Add more words that are less common. |
+| `kq7#Vz9!pL2m` | 4 | Very unguessable. |
+
+The bar is an HTML `<meter>` with `low="2"`, `high="3"` and `optimum="4"`, so browsers draw it red for scores 0 and 1, yellow for 2 and green for 3 and 4; at score 0 the bar is empty and only the text is shown. The text is a polite live region, so screen readers announce it; the bar repeats it and is hidden from them.
+
+zxcvbn needs word lists to recognize words, and they are large. noosphere uses zxcvbn-ts's ready-made browser builds, copied into `static/zxcvbn-ts/` unchanged, with no build step:
+
+| File | Contains | Uncompressed | Gzipped |
+|---|---|---|---|
+| `core.js` | the estimator | 107,643 bytes | 25,094 bytes |
+| `language-common.js` | common passwords, keyboard layouts, diceware words | 429,162 bytes | 226,446 bytes |
+| `language-en.js` | English words, first names, last names | 1,201,803 bytes | 620,975 bytes |
+
+The English lists are included, so dictionary words and names count as easy to guess. Each build is a classic script that sets `window.zxcvbnts`, so the page loads them with `<script defer>` tags followed by `static/password-strength.js`, which adds the meter. Deferred scripts download while the page is parsed, never block it from showing, and run in order once it has been parsed, so the meter is usually ready before the user reaches the password field. When the flag is off, the page contains none of these tags, and nothing is downloaded. As with the eye icon, the field is only marked with `data-password-strength`, and without JavaScript nothing changes.
+
 ## Context check
 
 Sign-up refuses a password that is a word from the sign-up itself, with the message "Don't use your email, your name or the site's name as your password." The words are the email, the part of the email before the `@`, the first and last name if given, and the site's name, `noosphere`.
@@ -121,8 +156,10 @@ noosphere does not compress its responses. Compression is left to whatever runs 
 | File | Uncompressed | Gzipped |
 |---|---|---|
 | `pico.classless.min.css` | 71,040 bytes | 10,684 bytes |
-| `app.css` | 1,598 bytes | 714 bytes |
+| `app.css` | 1,882 bytes | 767 bytes |
 | `password-toggle.js` | 1,729 bytes | 891 bytes |
+| `password-strength.js` | 2,360 bytes | 1,129 bytes |
+| `zxcvbn-ts/` (three files) | 1,738,608 bytes | 872,515 bytes |
 
 The browser lists what it can decode in `Accept-Encoding`, the server names what it used in `Content-Encoding`, and `Vary: Accept-Encoding` keeps caches from mixing the two versions.
 
@@ -162,6 +199,8 @@ internal/web/
     pico.classless.min.css   Pico CSS, unchanged
     app.css                  noosphere's adjustments
     password-toggle.js       the show/hide eye icon for password fields
+    password-strength.js     the password strength meter
+    zxcvbn-ts/               zxcvbn-ts browser builds and license, unchanged
 ```
 
 `internal/web` turns requests into flow data and flow data into pages. Storage stays in `internal/db`.

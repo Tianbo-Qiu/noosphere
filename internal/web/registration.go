@@ -26,6 +26,8 @@ type registrationPage struct {
 	Errors    db.RegistrationErrors
 	// PasswordHint states the password rules under the password field.
 	PasswordHint string
+	// PasswordStrengthMeter adds the strength meter's scripts to the page.
+	PasswordStrengthMeter bool
 }
 
 // errorPage is the data the error template renders.
@@ -80,14 +82,15 @@ func (s *Server) getRegistration(w http.ResponseWriter, r *http.Request) {
 
 	log.Info("registration flow shown", "flow_id", flow.ID)
 	s.render(w, http.StatusOK, "registration", registrationPage{
-		Title:        "Sign up",
-		Action:       "/registration?flow=" + flow.ID.String(),
-		CSRFToken:    maskToken(flow.CsrfToken),
-		Email:        flow.State.Traits.Email,
-		FirstName:    flow.State.Traits.FirstName,
-		LastName:     flow.State.Traits.LastName,
-		Errors:       flow.State.Errors,
-		PasswordHint: fmt.Sprintf("Use %d to %d characters.", password.MinLength, password.MaxLength),
+		Title:                 "Sign up",
+		Action:                "/registration?flow=" + flow.ID.String(),
+		CSRFToken:             maskToken(flow.CsrfToken),
+		Email:                 flow.State.Traits.Email,
+		FirstName:             flow.State.Traits.FirstName,
+		LastName:              flow.State.Traits.LastName,
+		Errors:                flow.State.Errors,
+		PasswordHint:          fmt.Sprintf("Use %d to %d characters.", password.MinLength, password.MaxLength),
+		PasswordStrengthMeter: s.cfg.PasswordStrengthMeter,
 	})
 }
 

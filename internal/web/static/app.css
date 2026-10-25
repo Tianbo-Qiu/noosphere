@@ -66,3 +66,17 @@ body > main {
 [data-password-wrapper]:has(input[aria-invalid="true"]) + small {
   color: var(--pico-del-color);
 }
+
+/* Strength meter added by password-strength.js, under the hint or error. */
+[data-password-strength] {
+  margin-bottom: var(--pico-spacing);
+}
+
+[data-password-strength] meter {
+  display: block;
+  width: 100%;
+}
+
+[data-password-strength] small {
+  color: var(--pico-muted-color);
+}

@@ -104,6 +104,36 @@ var _ = Describe("GET /registration", func() {
 		})
 	})
 
+	Context("with the strength meter off", func() {
+		It("sends neither the meter's scripts nor the field's marker", func(ctx SpecContext) {
+			ts := newTestServer(ctx)
+			browser := newBrowser()
+			flow := startFlow(ctx, ts, browser)
+
+			page := body(get(browser, ts.URL+"/registration?flow="+flow.ID.String()))
+
+			Expect(page).NotTo(ContainSubstring("data-password-strength"))
+			Expect(page).NotTo(ContainSubstring("zxcvbn-ts"))
+			Expect(page).NotTo(ContainSubstring("password-strength.js"))
+		})
+	})
+
+	Context("with the strength meter on", func() {
+		It("marks the password field and loads zxcvbn-ts before the meter's script, without blocking the page", func(ctx SpecContext) {
+			ts := newTestServerWithConfig(ctx, Config{FlowLifetime: time.Hour, PasswordStrengthMeter: true})
+			browser := newBrowser()
+			flow := startFlow(ctx, ts, browser)
+
+			page := body(get(browser, ts.URL+"/registration?flow="+flow.ID.String()))
+
+			Expect(page).To(ContainSubstring(`data-password-toggle data-password-strength`))
+			Expect(page).To(ContainSubstring(`<script src="/static/zxcvbn-ts/core.js" defer></script>
+<script src="/static/zxcvbn-ts/language-common.js" defer></script>
+<script src="/static/zxcvbn-ts/language-en.js" defer></script>
+<script src="/static/password-strength.js" defer></script>`))
+		})
+	})
+
 	Context("the form's csrf field", func() {
 		It("is different on every render of the same flow, and never the raw token", func(ctx SpecContext) {
 			ts := newTestServer(ctx)
@@ -794,6 +824,35 @@ var _ = Describe("GET /static/password-toggle.js", func() {
 		Expect(resp.Header.Get("Content-Type")).To(HavePrefix("text/javascript"))
 		Expect(body(resp)).To(ContainSubstring("data-password-toggle"))
 	})
+})
+
+var _ = Describe("GET /static/password-strength.js", func() {
+	It("serves the script that adds the strength meter", func(ctx SpecContext) {
+		ts := newTestServer(ctx)
+
+		resp := get(newBrowser(), ts.URL+"/static/password-strength.js")
+
+		Expect(resp.StatusCode).To(Equal(http.StatusOK))
+		Expect(resp.Header.Get("Content-Type")).To(HavePrefix("text/javascript"))
+		Expect(body(resp)).To(ContainSubstring("data-password-strength"))
+	})
+})
+
+var _ = Describe("GET /static/zxcvbn-ts", func() {
+	DescribeTable("serves each zxcvbn-ts browser build the meter loads",
+		func(ctx SpecContext, file, global string) {
+			ts := newTestServer(ctx)
+
+			resp := get(newBrowser(), ts.URL+"/static/zxcvbn-ts/"+file)
+
+			Expect(resp.StatusCode).To(Equal(http.StatusOK))
+			Expect(resp.Header.Get("Content-Type")).To(HavePrefix("text/javascript"))
+			Expect(body(resp)).To(HavePrefix(global))
+		},
+		Entry("the estimator", "core.js", "this.zxcvbnts = this.zxcvbnts || {};\nthis.zxcvbnts.core = "),
+		Entry("common passwords and keyboard layouts", "language-common.js", "this.zxcvbnts = this.zxcvbnts || {};\nthis.zxcvbnts[\"language-common\"] = "),
+		Entry("English words and names", "language-en.js", "this.zxcvbnts = this.zxcvbnts || {};\nthis.zxcvbnts[\"language-en\"] = "),
+	)
 })
 
 var _ = Describe("a page URL with a trailing slash", func() {
