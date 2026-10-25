@@ -656,6 +656,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#password-strength-meter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Password strength meter
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#context-check" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1279,6 +1290,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#password-strength-meter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Password strength meter
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#context-check" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1471,6 +1493,110 @@
 <li>The field has <code>spellcheck="false"</code> and <code>autocapitalize="none"</code>, so the browser neither underlines nor changes what is typed once it is visible.</li>
 </ul>
 <p>Switching a field between hidden and visible needs JavaScript, so the button is added by <code>static/password-toggle.js</code>, served by noosphere itself. The HTML only marks the field with <code>data-password-toggle</code>; without JavaScript it stays an ordinary password field. The script is a file rather than inline code, so a strict content security policy that allows only the site's own scripts remains possible.</p>
+<h2 id="password-strength-meter">Password strength meter<a class="headerlink" href="#password-strength-meter" title="Permanent link">&para;</a></h2>
+<p>When <code>PASSWORD_STRENGTH_METER=true</code>, a meter under the password field shows how hard the typed password would be to guess, with a short explanation. It is off by default. It is advice only: the server enforces the password rules (length, the context check and the breached password check), not a score. <a href="../../standards/nist-sp-800-63/">NIST SP 800-63B-4</a> asks for guidance that helps people choose a strong password, and a meter is one form of it.</p>
+<p>The estimate comes from <a href="https://zxcvbn-ts.github.io/zxcvbn/">zxcvbn-ts</a> (MIT license), the maintained TypeScript version of Dropbox's zxcvbn. Instead of counting character types, it estimates how many guesses an attacker would need: it splits the password into pieces it recognizes, such as common passwords, dictionary words, names, keyboard runs, dates and repeats, and adds up the cost of guessing each piece. It turns the estimate into a score from 0 to 4, shown with the words from its documentation:</p>
+<table>
+<thead>
+<tr>
+<th>Score</th>
+<th>Shown as</th>
+<th>Estimated guesses</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>Too guessable</td>
+<td>fewer than 10^3</td>
+</tr>
+<tr>
+<td>1</td>
+<td>Very guessable</td>
+<td>fewer than 10^6</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Somewhat guessable</td>
+<td>fewer than 10^8</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Safely unguessable</td>
+<td>fewer than 10^10</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Very unguessable</td>
+<td>10^10 or more</td>
+</tr>
+</tbody>
+</table>
+<p>The values of the other fields, such as the email and the names, are passed to zxcvbn as user inputs, so a password made of them scores low, like in the context check. With <code>test@example.com</code> in the email field, the meter shows:</p>
+<table>
+<thead>
+<tr>
+<th>Password</th>
+<th>Score</th>
+<th>Text</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>password</code></td>
+<td>0</td>
+<td>Too guessable. This is a heavily used password. Add more words that are less common.</td>
+</tr>
+<tr>
+<td><code>test@example.com</code></td>
+<td>0</td>
+<td>Too guessable. There should not be any personal or page related data. Add more words that are less common.</td>
+</tr>
+<tr>
+<td><code>margaretgarden</code></td>
+<td>2</td>
+<td>Somewhat guessable. This is similar to a commonly used password. Add more words that are less common.</td>
+</tr>
+<tr>
+<td><code>kq7#Vz9!pL2m</code></td>
+<td>4</td>
+<td>Very unguessable.</td>
+</tr>
+</tbody>
+</table>
+<p>The bar is an HTML <code>&lt;meter&gt;</code> with <code>low="2"</code>, <code>high="3"</code> and <code>optimum="4"</code>, so browsers draw it red for scores 0 and 1, yellow for 2 and green for 3 and 4; at score 0 the bar is empty and only the text is shown. The text is a polite live region, so screen readers announce it; the bar repeats it and is hidden from them.</p>
+<p>zxcvbn needs word lists to recognize words, and they are large. noosphere uses zxcvbn-ts's ready-made browser builds, copied into <code>static/zxcvbn-ts/</code> unchanged, with no build step:</p>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Contains</th>
+<th>Uncompressed</th>
+<th>Gzipped</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>core.js</code></td>
+<td>the estimator</td>
+<td>107,643 bytes</td>
+<td>25,094 bytes</td>
+</tr>
+<tr>
+<td><code>language-common.js</code></td>
+<td>common passwords, keyboard layouts, diceware words</td>
+<td>429,162 bytes</td>
+<td>226,446 bytes</td>
+</tr>
+<tr>
+<td><code>language-en.js</code></td>
+<td>English words, first names, last names</td>
+<td>1,201,803 bytes</td>
+<td>620,975 bytes</td>
+</tr>
+</tbody>
+</table>
+<p>The English lists are included, so dictionary words and names count as easy to guess. Each build is a classic script that sets <code>window.zxcvbnts</code>, so the page loads them with <code>&lt;script defer&gt;</code> tags followed by <code>static/password-strength.js</code>, which adds the meter. Deferred scripts download while the page is parsed, never block it from showing, and run in order once it has been parsed, so the meter is usually ready before the user reaches the password field. When the flag is off, the page contains none of these tags, and nothing is downloaded. As with the eye icon, the field is only marked with <code>data-password-strength</code>, and without JavaScript nothing changes.</p>
 <h2 id="context-check">Context check<a class="headerlink" href="#context-check" title="Permanent link">&para;</a></h2>
 <p>Sign-up refuses a password that is a word from the sign-up itself, with the message "Don't use your email, your name or the site's name as your password." The words are the email, the part of the email before the <code>@</code>, the first and last name if given, and the site's name, <code>noosphere</code>.</p>
 <p>The whole password is compared to each word, ignoring case and after the same normalization used for hashing, as <a href="../../standards/nist-sp-800-63/">NIST SP 800-63B-4</a> requires: <code>Test@Example.com</code> is refused for the account <code>test@example.com</code>, but <code>test@example.com and a lot more</code> is accepted. Passwords that are only similar to the email are not refused, so the reason for a refusal is always visible to the user (<a href="../../standards/context-specific-passwords/">Context-specific passwords</a>).</p>
@@ -1535,13 +1661,23 @@
 </tr>
 <tr>
 <td><code>app.css</code></td>
-<td>1,598 bytes</td>
-<td>714 bytes</td>
+<td>1,882 bytes</td>
+<td>767 bytes</td>
 </tr>
 <tr>
 <td><code>password-toggle.js</code></td>
 <td>1,729 bytes</td>
 <td>891 bytes</td>
+</tr>
+<tr>
+<td><code>password-strength.js</code></td>
+<td>2,360 bytes</td>
+<td>1,129 bytes</td>
+</tr>
+<tr>
+<td><code>zxcvbn-ts/</code> (three files)</td>
+<td>1,738,608 bytes</td>
+<td>872,515 bytes</td>
 </tr>
 </tbody>
 </table>
@@ -1571,6 +1707,8 @@
 </span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>    pico.classless.min.css   Pico CSS, unchanged
 </span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>    app.css                  noosphere's adjustments
 </span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>    password-toggle.js       the show/hide eye icon for password fields
+</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>    password-strength.js     the password strength meter
+</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>    zxcvbn-ts/               zxcvbn-ts browser builds and license, unchanged
 </span></code></pre></div>
 <p><code>internal/web</code> turns requests into flow data and flow data into pages. Storage stays in <code>internal/db</code>.</p>
 <h2 id="testing">Testing<a class="headerlink" href="#testing" title="Permanent link">&para;</a></h2>
