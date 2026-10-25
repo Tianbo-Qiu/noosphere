@@ -2,46 +2,74 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://tianbo-qiu.github.io/noosphere/</loc>
-         <lastmod>2026-10-24</lastmod>
+         <lastmod>2026-10-25</lastmod>
     </url>
     <url>
          <loc>https://tianbo-qiu.github.io/noosphere/test/</loc>
-         <lastmod>2026-10-24</lastmod>
+         <lastmod>2026-10-25</lastmod>
     </url>
     <url>
          <loc>https://tianbo-qiu.github.io/noosphere/design/database/</loc>
-         <lastmod>2026-10-24</lastmod>
+         <lastmod>2026-10-25</lastmod>
     </url>
     <url>
          <loc>https://tianbo-qiu.github.io/noosphere/design/overview/</loc>
-         <lastmod>2026-10-24</lastmod>
+         <lastmod>2026-10-25</lastmod>
     </url>
     <url>
          <loc>https://tianbo-qiu.github.io/noosphere/design/persistence/</loc>
-         <lastmod>2026-10-24</lastmod>
+         <lastmod>2026-10-25</lastmod>
     </url>
     <url>
          <loc>https://tianbo-qiu.github.io/noosphere/design/testing/</loc>
-         <lastmod>2026-10-24</lastmod>
+         <lastmod>2026-10-25</lastmod>
     </url>
     <url>
          <loc>https://tianbo-qiu.github.io/noosphere/design/web/</loc>
-         <lastmod>2026-10-24</lastmod>
+         <lastmod>2026-10-25</lastmod>
     </url>
     <url>
          <loc>https://tianbo-qiu.github.io/noosphere/journeys/registration/</loc>
-         <lastmod>2026-10-24</lastmod>
+         <lastmod>2026-10-25</lastmod>
+    </url>
+    <url>
+         <loc>https://tianbo-qiu.github.io/noosphere/standards/breached-password-check/</loc>
+         <lastmod>2026-10-25</lastmod>
+    </url>
+    <url>
+         <loc>https://tianbo-qiu.github.io/noosphere/standards/context-specific-passwords/</loc>
+         <lastmod>2026-10-25</lastmod>
+    </url>
+    <url>
+         <loc>https://tianbo-qiu.github.io/noosphere/standards/cookie-prefixes/</loc>
+         <lastmod>2026-10-25</lastmod>
+    </url>
+    <url>
+         <loc>https://tianbo-qiu.github.io/noosphere/standards/fetch-metadata/</loc>
+         <lastmod>2026-10-25</lastmod>
+    </url>
+    <url>
+         <loc>https://tianbo-qiu.github.io/noosphere/standards/nist-sp-800-63/</loc>
+         <lastmod>2026-10-25</lastmod>
+    </url>
+    <url>
+         <loc>https://tianbo-qiu.github.io/noosphere/standards/owasp/</loc>
+         <lastmod>2026-10-25</lastmod>
     </url>
     <url>
          <loc>https://tianbo-qiu.github.io/noosphere/standards/password-hashing/</loc>
-         <lastmod>2026-10-24</lastmod>
+         <lastmod>2026-10-25</lastmod>
+    </url>
+    <url>
+         <loc>https://tianbo-qiu.github.io/noosphere/standards/password-strength-estimation/</loc>
+         <lastmod>2026-10-25</lastmod>
     </url>
     <url>
          <loc>https://tianbo-qiu.github.io/noosphere/standards/precis/</loc>
-         <lastmod>2026-10-24</lastmod>
+         <lastmod>2026-10-25</lastmod>
     </url>
     <url>
          <loc>https://tianbo-qiu.github.io/noosphere/standards/unicode-normalization/</loc>
-         <lastmod>2026-10-24</lastmod>
+         <lastmod>2026-10-25</lastmod>
     </url>
 </urlset>

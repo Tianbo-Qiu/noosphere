@@ -703,6 +703,20 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -819,6 +833,202 @@
     
   
     Password hashing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../standards/breached-password-check/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Breached password check
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../standards/context-specific-passwords/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Context-specific passwords
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../standards/fetch-metadata/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Fetch Metadata
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../standards/cookie-prefixes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cookie prefixes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../standards/password-strength-estimation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Password strength estimation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../standards/nist-sp-800-63/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    NIST SP 800-63
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../standards/owasp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    OWASP
   
 
     
@@ -1034,12 +1244,13 @@
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>internal/web/           HTTP: routes, middleware, handlers, templates and static files
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>internal/db/            storage: generated query code plus hand-written transactions
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>internal/identifier/    normalization of login identifiers such as emails
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>internal/password/      password hashing
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>internal/logging/       builds the logger from its format and level
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>internal/dbtest/        test-only: a migrated database per test package
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>db/migrations/          schema changes, applied in order
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>db/queries/             the SQL that sqlc turns into Go
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>db/init/                one-time setup for a new database container (creates noosphere_test, the database TEST_DATABASE_URL names)
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>internal/password/      password rules and hashing
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>internal/pwned/         breached password check against the Pwned Passwords API
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>internal/logging/       builds the logger from its format and level
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>internal/dbtest/        test-only: a migrated database per test package
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>db/migrations/          schema changes, applied in order
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>db/queries/             the SQL that sqlc turns into Go
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>db/init/                one-time setup for a new database container (creates noosphere_test, the database TEST_DATABASE_URL names)
 </span></code></pre></div>
 <p>Each package has one job, and only <code>cmd/noosphere</code> reads environment variables; the other packages receive their settings as arguments. Code outside <code>internal/db</code> never writes SQL and never sees a Postgres error code: <code>internal/db</code> turns those into plain Go errors such as <code>ErrIdentifierTaken</code>.</p>
 <h2 id="everyday-commands">Everyday commands<a class="headerlink" href="#everyday-commands" title="Permanent link">&para;</a></h2>
@@ -1117,6 +1328,26 @@
 <td><code>LOG_LEVEL</code></td>
 <td><code>info</code></td>
 <td><code>debug</code>, <code>info</code>, <code>warn</code> or <code>error</code></td>
+</tr>
+<tr>
+<td><code>PASSWORD_CONTEXT_CHECK</code></td>
+<td><code>true</code></td>
+<td>Reject new passwords that are the email, the user's name or the site's name; <code>make run</code> sets <code>false</code></td>
+</tr>
+<tr>
+<td><code>PWNED_PASSWORDS_CHECK</code></td>
+<td><code>true</code></td>
+<td>Reject new passwords seen in data breaches, using the Pwned Passwords API; <code>make run</code> sets <code>false</code></td>
+</tr>
+<tr>
+<td><code>PWNED_PASSWORDS_URL</code></td>
+<td><code>https://api.pwnedpasswords.com</code></td>
+<td>The API to ask, for example a self-hosted mirror</td>
+</tr>
+<tr>
+<td><code>PWNED_PASSWORDS_TIMEOUT</code></td>
+<td><code>2s</code></td>
+<td>How long to wait for an answer before accepting the password anyway</td>
 </tr>
 </tbody>
 </table>
