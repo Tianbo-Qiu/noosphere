@@ -109,6 +109,8 @@ nav:
       - Password hashing: standards/password-hashing.md
       - Breached password check: standards/breached-password-check.md
       - Context-specific passwords: standards/context-specific-passwords.md
+      - Fetch Metadata: standards/fetch-metadata.md
+      - Cookie prefixes: standards/cookie-prefixes.md
       - Password strength estimation: standards/password-strength-estimation.md
       - NIST SP 800-63: standards/nist-sp-800-63.md
       - OWASP: standards/owasp.md

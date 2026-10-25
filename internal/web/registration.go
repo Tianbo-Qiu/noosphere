@@ -63,7 +63,7 @@ func (s *Server) getRegistration(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cookie, err := r.Cookie(csrfCookieName)
+	cookie, err := r.Cookie(s.csrfCookie())
 	if err != nil {
 		log.Warn("registration flow requested without csrf cookie", "flow_id", flow.ID)
 		s.render(w, http.StatusForbidden, "error", errorPage{
@@ -137,7 +137,7 @@ func (s *Server) postRegistration(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cookie, err := r.Cookie(csrfCookieName)
+	cookie, err := r.Cookie(s.csrfCookie())
 	if err != nil || cookie.Value != flow.CsrfToken {
 		log.Warn("registration rejected: csrf cookie missing or does not match the flow", "flow_id", flow.ID)
 		s.renderRejected(w)

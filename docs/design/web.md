@@ -100,7 +100,7 @@ The details of a `500` are only logged, never shown. Plain-text `http.Error` is 
 
 ## Cross-origin protection
 
-Every form post, and any other request that could change something, is first checked for where it came from. Browsers label each request with the [`Sec-Fetch-Site`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Sec-Fetch-Site) header (`same-origin`, `same-site`, `cross-site` or `none`), and older ones with [`Origin`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Origin). A post that a browser marks as coming from another site is rejected with the "Request rejected" page and a `403`, before the form is even read.
+Every form post, and any other request that could change something, is first checked for where it came from. Browsers label each request with the `Sec-Fetch-Site` header ([Fetch Metadata](../standards/fetch-metadata.md)) (`same-origin`, `same-site`, `cross-site` or `none`), and older ones with [`Origin`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Origin). A post that a browser marks as coming from another site is rejected with the "Request rejected" page and a `403`, before the form is even read.
 
 This uses Go's own [`http.CrossOriginProtection`](https://pkg.go.dev/net/http#CrossOriginProtection) (Go 1.25), which checks `Sec-Fetch-Site`, "available in all browsers since 2023", and falls back to comparing the `Origin` header's host with the request's. `GET`, `HEAD` and `OPTIONS` are always allowed, which is why no `GET` handler may change state. A request with neither header comes from something other than a browser, such as `curl`, and is allowed; such a client cannot carry a victim's cookies, so it is not a CSRF risk.
 
@@ -108,7 +108,7 @@ It is a second, independent layer in front of the CSRF token: the [OWASP CSRF ch
 
 ## CSRF cookie
 
-Each browser gets one random CSRF token, in an `HttpOnly`, `SameSite=Lax` cookie that is `Secure` outside local development. Every flow the browser starts stores a copy, and a form post must carry the same token as both the cookie and the flow. One token per browser, rather than per flow, lets a user have sign-up open in two tabs.
+Each browser gets one random CSRF token, in an `HttpOnly`, `SameSite=Lax` cookie that is `Secure` outside local development. Over HTTPS the cookie is named `__Host-csrf_token`: browsers accept the `__Host-` prefix ([Cookie prefixes](../standards/cookie-prefixes.md)) only for a `Secure` cookie with `Path=/` and no `Domain`, so no other subdomain of the site can set or overwrite it, which closes the main weakness [OWASP](../standards/owasp.md) notes for this pattern. Over plain HTTP in local development, where browsers would refuse that prefix, it is named `csrf_token`. Every flow the browser starts stores a copy, and a form post must carry the same token as both the cookie and the flow. One token per browser, rather than per flow, lets a user have sign-up open in two tabs.
 
 A browser that does not send the cookie back would otherwise get a new flow, and a new cookie, on every request. Instead it gets a `403` page asking it to allow cookies.
 

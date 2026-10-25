@@ -38,19 +38,31 @@ var _ = Describe("GET /registration", func() {
 
 			resp := get(newBrowser(), ts.URL+"/registration")
 
-			csrf := cookie(resp, csrfCookieName)
+			csrf := cookie(resp, "csrf_token")
 			Expect(csrf.Value).To(Equal(redirectedFlow(ctx, ts, resp).CsrfToken))
 			Expect(csrf.HttpOnly).To(BeTrue())
 			Expect(csrf.SameSite).To(Equal(http.SameSiteLaxMode))
 			Expect(csrf.Path).To(Equal("/"))
 		})
 
-		It("marks the csrf cookie Secure when the server is configured for HTTPS", func(ctx SpecContext) {
+		It("names the csrf cookie with the __Host- prefix and marks it Secure when the server is configured for HTTPS", func(ctx SpecContext) {
 			ts := newTestServerWithConfig(ctx, Config{SecureCookies: true, FlowLifetime: time.Hour})
 
 			resp := get(newBrowser(), ts.URL+"/registration")
 
-			Expect(cookie(resp, csrfCookieName).Secure).To(BeTrue())
+			csrf := cookie(resp, "__Host-csrf_token")
+			Expect(csrf.Secure).To(BeTrue())
+			Expect(csrf.Path).To(Equal("/"))
+			Expect(csrf.Domain).To(BeEmpty())
+		})
+
+		It("names the csrf cookie without the prefix over plain HTTP, where browsers would refuse it", func(ctx SpecContext) {
+			ts := newTestServer(ctx)
+
+			resp := get(newBrowser(), ts.URL+"/registration")
+
+			Expect(resp.Cookies()).To(ContainElement(HaveField("Name", "csrf_token")))
+			Expect(resp.Cookies()).NotTo(ContainElement(HaveField("Name", "__Host-csrf_token")))
 		})
 
 		It("reuses the browser's csrf token for its next flow", func(ctx SpecContext) {
