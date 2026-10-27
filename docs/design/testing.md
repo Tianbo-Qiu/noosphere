@@ -100,7 +100,7 @@ Specs are written with [Ginkgo](https://onsi.github.io/ginkgo/) and [Gomega](htt
 
 Spec names state the rule they prove, scoped exactly as the code or schema scopes it, for example "rejects an identifier already used by another credential of the same type". Test data is written inline and obviously fake (`test@example.com`, `"test-hash"`), and the cases are the ones a person would worry about: a different case, surrounding spaces, fullwidth letters, a decomposed `é`, an invisible character.
 
-`make test` runs all tests with `go test`. `make test-v` runs them through the Ginkgo runner in random order, printing every spec, and accepts extra flags such as `ARGS='--focus CreatePasswordIdentity'`.
+`make test` runs all tests with `go test`. `make test-v` runs them through the Ginkgo runner in random order, printing every spec, and accepts extra flags such as `ARGS='--focus SignUpWithPassword'`.
 
 ## Continuous integration
 

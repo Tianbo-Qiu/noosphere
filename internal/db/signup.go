@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/Tianbo-Qiu/noosphere/internal/identifier"
 	"github.com/jackc/pgx/v5"
@@ -21,27 +22,30 @@ type Beginner interface {
 	Begin(ctx context.Context) (pgx.Tx, error)
 }
 
-func CreatePasswordIdentity(ctx context.Context, db Beginner, traits Traits, rawIdentifier string, config PasswordConfig) (Identity, error) {
+// SignUpWithPassword creates an identity with a password credential and its
+// identifier, and signs it in with a new session, in one transaction. Either
+// all of them are stored or none.
+func SignUpWithPassword(ctx context.Context, db Beginner, traits Traits, rawIdentifier string, config PasswordConfig, sessionTokenHash []byte, sessionExpiresAt time.Time) (Identity, Session, error) {
 	normalized, err := identifier.Normalize(rawIdentifier)
 	if err != nil {
-		return Identity{}, fmt.Errorf("%w: %w", ErrInvalidIdentifier, err)
+		return Identity{}, Session{}, fmt.Errorf("%w: %w", ErrInvalidIdentifier, err)
 	}
 
 	configJSON, err := json.Marshal(config)
 	if err != nil {
-		return Identity{}, err
+		return Identity{}, Session{}, err
 	}
 
 	tx, err := db.Begin(ctx)
 	if err != nil {
-		return Identity{}, err
+		return Identity{}, Session{}, err
 	}
 	defer tx.Rollback(ctx)
 
 	q := New(tx)
 	identity, err := q.CreateIdentity(ctx, traits)
 	if err != nil {
-		return Identity{}, err
+		return Identity{}, Session{}, err
 	}
 
 	credential, err := q.CreateCredential(ctx, CreateCredentialParams{
@@ -50,7 +54,7 @@ func CreatePasswordIdentity(ctx context.Context, db Beginner, traits Traits, raw
 		Config:     configJSON,
 	})
 	if err != nil {
-		return Identity{}, err
+		return Identity{}, Session{}, err
 	}
 
 	_, err = q.CreateCredentialIdentifier(ctx, CreateCredentialIdentifierParams{
@@ -60,14 +64,23 @@ func CreatePasswordIdentity(ctx context.Context, db Beginner, traits Traits, raw
 	})
 	if err != nil {
 		if isConstraintViolation(err, uniqueViolation, identifierUniqueConstraint) {
-			return Identity{}, ErrIdentifierTaken
+			return Identity{}, Session{}, ErrIdentifierTaken
 		}
-		return Identity{}, err
+		return Identity{}, Session{}, err
+	}
+
+	session, err := q.CreateSession(ctx, CreateSessionParams{
+		TokenHash:  sessionTokenHash,
+		IdentityID: identity.ID,
+		ExpiresAt:  sessionExpiresAt,
+	})
+	if err != nil {
+		return Identity{}, Session{}, err
 	}
 
 	if err := tx.Commit(ctx); err != nil {
-		return Identity{}, err
+		return Identity{}, Session{}, err
 	}
 
-	return identity, nil
+	return identity, session, nil
 }

@@ -19,6 +19,8 @@ type Config struct {
 	SecureCookies bool
 	// FlowLifetime is how long a registration flow stays valid.
 	FlowLifetime time.Duration
+	// SessionLifetime is how long a session stays valid after sign-in.
+	SessionLifetime time.Duration
 	// PasswordContextCheck rejects new passwords that are the email, the
 	// user's name or the service's name.
 	PasswordContextCheck bool

@@ -166,7 +166,7 @@ Noosphere renders the form itself, so the whole flow takes three requests to one
 |---|---|
 | `GET /registration` | Creates a flow and redirects to `/registration?flow=<id>` |
 | `GET /registration?flow=<id>` | Loads the flow and renders the form from it |
-| `POST /registration?flow=<id>` | Checks the flow and CSRF token, then creates the account and redirects to `/registration/complete`, or saves the errors into the flow and redirects back to the form |
+| `POST /registration?flow=<id>` | Checks the flow and CSRF token, then creates the account, signs it in with a session cookie and redirects to `/registration/complete`, or saves the errors into the flow and redirects back to the form |
 
 The redirect after creating a flow puts the flow ID in the URL, so a refresh or the back button shows the same attempt instead of starting a new one. Every form post is also answered with a redirect ([Post/Redirect/Get](https://en.wikipedia.org/wiki/Post/Redirect/Get)), so a refresh never submits the form twice. Once the account is created, the flow is deleted, so its URL starts a new sign-up instead of showing a form that can only fail.
 
@@ -297,7 +297,7 @@ Constraints:
 - **`UNIQUE (token_hash)`.** A cookie must lead to exactly one session. A second row with the same hash is rejected, so a lookup by cookie can never return someone else's session.
 - **`FOREIGN KEY (identity_id) → identities`, cascade delete.** A session for a missing identity is rejected. Deleting Ada's identity deletes both sessions, which logs her out everywhere.
 
-The cookie carries a random 32-byte token, and the table stores only its hash, so a database leak gives no usable sessions. A fast hash is enough here, unlike for passwords, because the token is fully random and cannot be guessed. See the [OWASP Session Management Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html).
+The cookie carries a random 128-bit token, and the table stores only its SHA-256 hash, so a database leak gives no usable sessions. A fast hash is enough here, unlike for passwords, because the token is fully random and cannot be guessed. See the [OWASP Session Management Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html).
 
 `identity_id` also needs its own index. Postgres does not index foreign key columns automatically, and without it, listing Ada's sessions or deleting her identity scans the whole table.
 

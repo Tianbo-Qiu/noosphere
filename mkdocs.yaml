@@ -112,6 +112,7 @@ nav:
       - Fetch Metadata: standards/fetch-metadata.md
       - Cookie prefixes: standards/cookie-prefixes.md
       - Password strength estimation: standards/password-strength-estimation.md
+      - Session management: standards/session-management.md
       - NIST SP 800-63: standards/nist-sp-800-63.md
       - OWASP: standards/owasp.md
   - Test: test.md

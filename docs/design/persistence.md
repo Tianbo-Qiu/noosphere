@@ -21,7 +21,7 @@ The generated `Queries` runs on anything that can execute SQL: the pool, a singl
 
 ## Transactions
 
-An operation that writes several rows runs in one transaction, so it either completes or leaves nothing behind. Sign-up inserts an identity, its credential and the credential's identifier; if the identifier is taken, the identity and credential are rolled back too.
+An operation that writes several rows runs in one transaction, so it either completes or leaves nothing behind. Sign-up (`SignUpWithPassword`) inserts an identity, its credential, the credential's identifier and a session that signs the new account in; if the identifier is taken, the identity and credential are rolled back too, and no session is created.
 
 These functions accept anything with a `Begin` method. The server passes the pool, which starts a transaction. Tests pass their own transaction, on which `Begin` starts a savepoint, so the operation commits or rolls back inside the test's transaction and the test can still roll everything back at the end.
 

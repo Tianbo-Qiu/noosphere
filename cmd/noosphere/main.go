@@ -57,6 +57,7 @@ func run(ctx context.Context, cfg config, logger *slog.Logger) error {
 		"addr", cfg.Addr,
 		"secure_cookies", cfg.Web.SecureCookies,
 		"flow_lifetime", cfg.Web.FlowLifetime,
+		"session_lifetime", cfg.Web.SessionLifetime,
 		"password_context_check", cfg.Web.PasswordContextCheck,
 		"password_strength_meter", cfg.Web.PasswordStrengthMeter,
 		"pwned_passwords_check", cfg.PwnedPasswordsCheck,

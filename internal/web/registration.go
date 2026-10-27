@@ -1,6 +1,8 @@
 package web
 
 import (
+	"crypto/rand"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -201,7 +203,12 @@ func (s *Server) postRegistration(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	identity, err := db.CreatePasswordIdentity(r.Context(), s.pool, traits, email, db.PasswordConfig{HashedPassword: hashed})
+	// The cookie carries the session token; the database stores only its
+	// hash, so a leaked database holds no usable sessions.
+	sessionToken := rand.Text()
+	sessionTokenHash := sha256.Sum256([]byte(sessionToken))
+	identity, session, err := db.SignUpWithPassword(r.Context(), s.pool, traits, email,
+		db.PasswordConfig{HashedPassword: hashed}, sessionTokenHash[:], time.Now().Add(s.cfg.SessionLifetime))
 	if errors.Is(err, db.ErrIdentifierTaken) {
 		formErrors.Email = "An account with this email already exists."
 		log.Info("registration rejected: email already registered", "flow_id", flow.ID, "form_errors", formErrors)
@@ -212,11 +219,20 @@ func (s *Server) postRegistration(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		log.Error("create identity", "flow_id", flow.ID, "err", err)
+		log.Error("sign up", "flow_id", flow.ID, "err", err)
 		s.renderInternalError(w)
 		return
 	}
-	log.Info("identity created", "flow_id", flow.ID, "identity_id", identity.ID)
+	log.Info("signed up", "flow_id", flow.ID, "identity_id", identity.ID, "session_id", session.ID)
+	http.SetCookie(w, &http.Cookie{
+		Name:     s.sessionCookie(),
+		Value:    sessionToken,
+		Path:     "/",
+		Expires:  session.ExpiresAt,
+		HttpOnly: true,
+		Secure:   s.cfg.SecureCookies,
+		SameSite: http.SameSiteLaxMode,
+	})
 
 	if err := s.queries.DeleteRegistrationFlow(r.Context(), flow.ID); err != nil {
 		log.Error("delete registration flow", "flow_id", flow.ID, "err", err)

@@ -63,6 +63,7 @@ func loadConfig() (config, error) {
 		Web: web.Config{
 			SecureCookies:         secureCookies,
 			FlowLifetime:          time.Hour,
+			SessionLifetime:       24 * time.Hour,
 			PasswordContextCheck:  contextCheck,
 			PasswordStrengthMeter: strengthMeter,
 		},

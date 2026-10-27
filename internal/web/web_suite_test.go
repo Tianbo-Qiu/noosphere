@@ -40,10 +40,10 @@ type testServer struct {
 
 // newTestServer empties the suite's database and starts the web server on it,
 // configured as for local development: cookies without Secure, flows that
-// live for one hour.
+// live for one hour and sessions for a day.
 func newTestServer(ctx context.Context) testServer {
 	GinkgoHelper()
-	return newTestServerWithConfig(ctx, Config{FlowLifetime: time.Hour})
+	return newTestServerWithConfig(ctx, Config{FlowLifetime: time.Hour, SessionLifetime: 24 * time.Hour})
 }
 
 // newTestServerWithConfig is newTestServer with the given configuration. The

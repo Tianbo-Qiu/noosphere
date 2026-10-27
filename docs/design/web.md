@@ -147,6 +147,28 @@ Each browser gets one random CSRF token, in an `HttpOnly`, `SameSite=Lax` cookie
 
 A browser that does not send the cookie back would otherwise get a new flow, and a new cookie, on every request. Instead it gets a `403` page asking it to allow cookies.
 
+## Session cookie
+
+A signed-in browser is recognized by its session cookie. The cookie holds a random token; the server keeps a session record for it, and a request counts as signed in only while that record exists, is active and has not expired. The rules it follows are on [Session management](../standards/session-management.md).
+
+The token is made with [`crypto/rand.Text`](https://pkg.go.dev/crypto/rand#Text), 128 random bits written as 26 base32 characters, like the CSRF token. That meets NIST's minimum of 64 bits and OWASP's of 128, but not the 160 bits or more that [OWASP](https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html) prefers; the standard library function is used as it is rather than a hand-written generator, and 2^128 possible tokens are already far beyond guessing. The `sessions` table stores only its SHA-256 hash, so a leaked database or backup holds no token that could be put in a cookie. A fast hash is enough because a random 128-bit token cannot be guessed; passwords need a slow one because people choose them.
+
+The cookie is `HttpOnly`, `SameSite=Lax` and `Path=/`, and expires with the session. Like the CSRF cookie, it is `Secure` and named `__Host-session` over HTTPS, so no other subdomain can set or overwrite it, and named `session` over plain HTTP in local development. For example:
+
+```
+Set-Cookie: __Host-session=5SV5CCQ26THIGSRJIVF7O244LG; Path=/; Expires=Tue, 27 Oct 2026 09:30:00 GMT; HttpOnly; Secure; SameSite=Lax
+```
+
+A session lasts 24 hours from sign-in (`SessionLifetime`), after which the user signs in again. NIST allows up to 30 days for password sign-in. The cookie's expiry only keeps the browser from holding a dead cookie; the server checks the session's own `expires_at`. The session's ID, never its token, is what appears in logs.
+
+## Signed in after sign-up
+
+A successful sign-up also signs the user in, so the account can be used right away without typing the password again.
+
+The session is created in the same database transaction as the identity, its password credential and its identifier. If any of the four inserts fails, none is kept. Creating the session after the account was committed would risk an account with no session after a failure, and since signing up again with the same email is refused, the user would be stuck until they can log in.
+
+The token is created on the server at that moment, never taken from the browser, so a token planted in the browser before sign-up cannot become a signed-in session ([session fixation](https://owasp.org/www-community/attacks/Session_fixation)). The response that redirects after sign-up sets the session cookie, and the log records `signed up` with the identity and session IDs.
+
 ## Compression
 
 noosphere does not compress its responses. Compression is left to whatever runs in front of it in a deployment, such as a reverse proxy or a CDN.
@@ -189,6 +211,7 @@ internal/web/
   server.go              Config, Server and the routes
   middleware.go          request ID and access log
   csrf.go                the per-browser CSRF cookie
+  session.go             the session cookie's name
   registration.go        handlers for the registration flow
   render.go              loads the embedded templates and static files, renders a page
   templates/

@@ -26,7 +26,7 @@ var _ = Describe("loadConfig", func() {
 			Addr:        ":8080",
 			LogFormat:   "text",
 			LogLevel:    "info",
-			Web:         web.Config{SecureCookies: true, FlowLifetime: time.Hour, PasswordContextCheck: true},
+			Web:         web.Config{SecureCookies: true, FlowLifetime: time.Hour, SessionLifetime: 24 * time.Hour, PasswordContextCheck: true},
 
 			PwnedPasswordsCheck:   true,
 			PwnedPasswordsURL:     "https://api.pwnedpasswords.com",

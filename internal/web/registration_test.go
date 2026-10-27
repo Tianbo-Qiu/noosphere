@@ -3,6 +3,7 @@ package web
 import (
 	"context"
 	"crypto/sha1"
+	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"net/http"
@@ -247,6 +248,61 @@ var _ = Describe("POST /registration", func() {
 			Expect(resp.Header.Get("Location")).To(Equal("/registration/complete"))
 			account := storedAccount(ctx, ts, "test@example.com")
 			Expect(account.Traits).To(Equal(db.Traits{Email: "test@example.com", FirstName: "Test", LastName: "User"}))
+		})
+
+		It("signs the new account in with an HttpOnly session cookie whose token is stored only as a hash", func(ctx SpecContext) {
+			ts := newTestServer(ctx)
+			browser := newBrowser()
+			flow := startFlow(ctx, ts, browser)
+
+			resp := submit(browser, ts, flow, validForm(flow, "test@example.com"))
+
+			session := cookie(resp, "session")
+			Expect(session.HttpOnly).To(BeTrue())
+			Expect(session.Secure).To(BeFalse())
+			Expect(session.SameSite).To(Equal(http.SameSiteLaxMode))
+			Expect(session.Path).To(Equal("/"))
+			Expect(session.Expires).To(BeTemporally("~", time.Now().Add(24*time.Hour), time.Minute))
+
+			hash := sha256.Sum256([]byte(session.Value))
+			var identityEmail string
+			var active bool
+			var expiresAt time.Time
+			Expect(ts.Pool.QueryRow(ctx, `
+				SELECT i.traits->>'email', s.active, s.expires_at
+				FROM sessions s
+				JOIN identities i ON i.id = s.identity_id
+				WHERE s.token_hash = $1
+				`, hash[:]).Scan(&identityEmail, &active, &expiresAt)).To(Succeed())
+			Expect(identityEmail).To(Equal("test@example.com"))
+			Expect(active).To(BeTrue())
+			Expect(expiresAt).To(BeTemporally("~", session.Expires, time.Second))
+
+			var plainTokens int
+			Expect(ts.Pool.QueryRow(ctx, `SELECT count(*) FROM sessions WHERE token_hash = $1`, []byte(session.Value)).Scan(&plainTokens)).To(Succeed())
+			Expect(plainTokens).To(BeZero())
+		})
+
+		It("names the session cookie with the __Host- prefix and marks it Secure when the server is configured for HTTPS", func(ctx SpecContext) {
+			ts := newTestServerWithConfig(ctx, Config{SecureCookies: true, FlowLifetime: time.Hour, SessionLifetime: 24 * time.Hour})
+			browser := newBrowser()
+			flow := startFlow(ctx, ts, browser)
+			// The test server speaks plain HTTP, so the cookie jar does not send
+			// the Secure CSRF cookie back; send it by hand.
+			req, err := http.NewRequest(http.MethodPost, ts.URL+"/registration?flow="+flow.ID.String(), strings.NewReader(validForm(flow, "test@example.com").Encode()))
+			Expect(err).NotTo(HaveOccurred())
+			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			req.AddCookie(&http.Cookie{Name: "__Host-csrf_token", Value: flow.CsrfToken})
+
+			resp, err := newBrowserWithoutCookies().Do(req)
+			Expect(err).NotTo(HaveOccurred())
+			DeferCleanup(resp.Body.Close)
+
+			Expect(resp.StatusCode).To(Equal(http.StatusSeeOther))
+			session := cookie(resp, "__Host-session")
+			Expect(session.Secure).To(BeTrue())
+			Expect(session.Path).To(Equal("/"))
+			Expect(session.Domain).To(BeEmpty())
 		})
 
 		It("stores an Argon2id hash, never the password", func(ctx SpecContext) {
