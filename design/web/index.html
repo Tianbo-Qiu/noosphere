@@ -722,6 +722,28 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#session-cookie" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Session cookie
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#signed-in-after-sign-up" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signed in after sign-up
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#compression" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -817,6 +839,8 @@
   
     
     
+      
+        
       
         
       
@@ -1114,6 +1138,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../standards/session-management/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Session management
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../standards/nist-sp-800-63/" class="md-nav__link">
         
   
@@ -1349,6 +1401,28 @@
     <span class="md-ellipsis">
       
         CSRF cookie
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#session-cookie" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Session cookie
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#signed-in-after-sign-up" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Signed in after sign-up
       
     </span>
   </a>
@@ -1642,6 +1716,17 @@
 <h2 id="csrf-cookie">CSRF cookie<a class="headerlink" href="#csrf-cookie" title="Permanent link">&para;</a></h2>
 <p>Each browser gets one random CSRF token, in an <code>HttpOnly</code>, <code>SameSite=Lax</code> cookie that is <code>Secure</code> outside local development. Over HTTPS the cookie is named <code>__Host-csrf_token</code>: browsers accept the <code>__Host-</code> prefix (<a href="../../standards/cookie-prefixes/">Cookie prefixes</a>) only for a <code>Secure</code> cookie with <code>Path=/</code> and no <code>Domain</code>, so no other subdomain of the site can set or overwrite it, which closes the main weakness <a href="../../standards/owasp/">OWASP</a> notes for this pattern. Over plain HTTP in local development, where browsers would refuse that prefix, it is named <code>csrf_token</code>. Every flow the browser starts stores a copy, and a form post must carry the same token as both the cookie and the flow. One token per browser, rather than per flow, lets a user have sign-up open in two tabs.</p>
 <p>A browser that does not send the cookie back would otherwise get a new flow, and a new cookie, on every request. Instead it gets a <code>403</code> page asking it to allow cookies.</p>
+<h2 id="session-cookie">Session cookie<a class="headerlink" href="#session-cookie" title="Permanent link">&para;</a></h2>
+<p>A signed-in browser is recognized by its session cookie. The cookie holds a random token; the server keeps a session record for it, and a request counts as signed in only while that record exists, is active and has not expired. The rules it follows are on <a href="../../standards/session-management/">Session management</a>.</p>
+<p>The token is made with <a href="https://pkg.go.dev/crypto/rand#Text"><code>crypto/rand.Text</code></a>, 128 random bits written as 26 base32 characters, like the CSRF token. That meets NIST's minimum of 64 bits and OWASP's of 128, but not the 160 bits or more that <a href="https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html">OWASP</a> prefers; the standard library function is used as it is rather than a hand-written generator, and 2^128 possible tokens are already far beyond guessing. The <code>sessions</code> table stores only its SHA-256 hash, so a leaked database or backup holds no token that could be put in a cookie. A fast hash is enough because a random 128-bit token cannot be guessed; passwords need a slow one because people choose them.</p>
+<p>The cookie is <code>HttpOnly</code>, <code>SameSite=Lax</code> and <code>Path=/</code>, and expires with the session. Like the CSRF cookie, it is <code>Secure</code> and named <code>__Host-session</code> over HTTPS, so no other subdomain can set or overwrite it, and named <code>session</code> over plain HTTP in local development. For example:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>Set-Cookie: __Host-session=5SV5CCQ26THIGSRJIVF7O244LG; Path=/; Expires=Tue, 27 Oct 2026 09:30:00 GMT; HttpOnly; Secure; SameSite=Lax
+</span></code></pre></div>
+<p>A session lasts 24 hours from sign-in (<code>SessionLifetime</code>), after which the user signs in again. NIST allows up to 30 days for password sign-in. The cookie's expiry only keeps the browser from holding a dead cookie; the server checks the session's own <code>expires_at</code>. The session's ID, never its token, is what appears in logs.</p>
+<h2 id="signed-in-after-sign-up">Signed in after sign-up<a class="headerlink" href="#signed-in-after-sign-up" title="Permanent link">&para;</a></h2>
+<p>A successful sign-up also signs the user in, so the account can be used right away without typing the password again.</p>
+<p>The session is created in the same database transaction as the identity, its password credential and its identifier. If any of the four inserts fails, none is kept. Creating the session after the account was committed would risk an account with no session after a failure, and since signing up again with the same email is refused, the user would be stuck until they can log in.</p>
+<p>The token is created on the server at that moment, never taken from the browser, so a token planted in the browser before sign-up cannot become a signed-in session (<a href="https://owasp.org/www-community/attacks/Session_fixation">session fixation</a>). The response that redirects after sign-up sets the session cookie, and the log records <code>signed up</code> with the identity and session IDs.</p>
 <h2 id="compression">Compression<a class="headerlink" href="#compression" title="Permanent link">&para;</a></h2>
 <p>noosphere does not compress its responses. Compression is left to whatever runs in front of it in a deployment, such as a reverse proxy or a CDN.</p>
 <p><strong>What compression does.</strong> The server compresses a response before sending it, and the browser decompresses it. Text shrinks a lot because it repeats itself; with gzip at level 5, noosphere's files measured:</p>
@@ -1686,29 +1771,30 @@
 <p><strong>What has to be safe instead.</strong> Proxies compress HTML by default: <a href="https://nginx.org/en/docs/http/ngx_http_gzip_module.html">nginx</a> says "responses with the 'text/html' type are always compressed", and <a href="https://caddyserver.com/docs/caddyfile/directives/encode">Caddy</a> compresses all <code>text/*</code> responses. Compressed HTML is open to <a href="https://en.wikipedia.org/wiki/BREACH">BREACH</a> when a page contains a secret and text an attacker can influence, because guesses that match the secret make the response smaller. The sign-up page is such a page: it carries the CSRF token and shows the typed email again after an error. Rather than depend on every deployment's proxy settings, the page itself is made safe: the CSRF token in it is masked with fresh random bytes on every response (<a href="#masked-csrf-token">Masked CSRF token</a>), so compression has nothing stable to reveal. noosphere can then sit behind any proxy, with compression on or off.</p>
 <h2 id="masked-csrf-token">Masked CSRF token<a class="headerlink" href="#masked-csrf-token" title="Permanent link">&para;</a></h2>
 <p>The hidden <code>csrf_token</code> field in a form never contains the token itself. Each time the page is rendered, the server picks random bytes as long as the token, XORs them with the token, and puts the random bytes followed by the result in the field, encoded as URL-safe base64. For the token <code>47ISB3EWWBGSHHZI4RDKWEB3DG</code>, two renders of the same form produced:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>LJdYMr9EywtT_VLfyYxC5m6nUldJOOyfuY0YoBFh_XeOXAS_FYyBxBivWvUWHB59rqz9yg
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>G5eSYzW34b_CHrQQx3PzM-JqCW4yocECIqUvoNswd4Sk6JVc80OPO6l61jhNJWXkgzFm4g
+<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>LJdYMr9EywtT_VLfyYxC5m6nUldJOOyfuY0YoBFh_XeOXAS_FYyBxBivWvUWHB59rqz9yg
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>G5eSYzW34b_CHrQQx3PzM-JqCW4yocECIqUvoNswd4Sk6JVc80OPO6l61jhNJWXkgzFm4g
 </span></code></pre></div>
 <p>On a form post, the server splits the field into its two halves and XORs them again, which gives back the token, then compares it with the cookie and the flow's copy. Anything that does not decode, does not split into two equal halves, or is not in canonical base64 is rejected like a wrong token.</p>
 <p>This defends against <a href="https://en.wikipedia.org/wiki/BREACH">BREACH</a>, an attack on compressed HTTPS responses. A page that contains both a secret and text an attacker can influence, such as the email shown again after an error, leaks the secret through its compressed size: guesses that match part of the secret compress better. noosphere does not compress pages itself, but a reverse proxy or CDN in front of it usually does, since <a href="https://nginx.org/en/docs/http/ngx_http_gzip_module.html">nginx</a> and <a href="https://caddyserver.com/docs/caddyfile/directives/encode">Caddy</a> both compress HTML by default. With masking, the bytes in the page change on every response, so there is nothing stable for the attack to recover, wherever compression happens.</p>
 <p>All token comparisons use <a href="https://pkg.go.dev/crypto/subtle#ConstantTimeCompare"><code>crypto/subtle.ConstantTimeCompare</code></a>, which takes the same time however much of a guess is right, so response times reveal nothing about the token.</p>
 <h2 id="layout">Layout<a class="headerlink" href="#layout" title="Permanent link">&para;</a></h2>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>internal/web/
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>  server.go              Config, Server and the routes
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>  middleware.go          request ID and access log
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>  csrf.go                the per-browser CSRF cookie
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>  registration.go        handlers for the registration flow
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>  render.go              loads the embedded templates and static files, renders a page
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>  templates/
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    layout.html          shared page frame and stylesheet links
-</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>    registration.html    the registration form
-</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>    error.html           an error message with a link to start again
-</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>  static/
-</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>    pico.classless.min.css   Pico CSS, unchanged
-</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>    app.css                  noosphere's adjustments
-</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>    password-toggle.js       the show/hide eye icon for password fields
-</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>    password-strength.js     the password strength meter
-</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>    zxcvbn-ts/               zxcvbn-ts browser builds and license, unchanged
+<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>internal/web/
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>  server.go              Config, Server and the routes
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>  middleware.go          request ID and access log
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>  csrf.go                the per-browser CSRF cookie
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>  session.go             the session cookie's name
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>  registration.go        handlers for the registration flow
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>  render.go              loads the embedded templates and static files, renders a page
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>  templates/
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>    layout.html          shared page frame and stylesheet links
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>    registration.html    the registration form
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>    error.html           an error message with a link to start again
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>  static/
+</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>    pico.classless.min.css   Pico CSS, unchanged
+</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>    app.css                  noosphere's adjustments
+</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>    password-toggle.js       the show/hide eye icon for password fields
+</span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>    password-strength.js     the password strength meter
+</span><span id="__span-3-17"><a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a>    zxcvbn-ts/               zxcvbn-ts browser builds and license, unchanged
 </span></code></pre></div>
 <p><code>internal/web</code> turns requests into flow data and flow data into pages. Storage stays in <code>internal/db</code>.</p>
 <h2 id="testing">Testing<a class="headerlink" href="#testing" title="Permanent link">&para;</a></h2>

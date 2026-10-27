@@ -739,6 +739,8 @@
       
         
       
+        
+      
     
     
     
@@ -1015,6 +1017,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../standards/session-management/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Session management
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../standards/nist-sp-800-63/" class="md-nav__link">
         
   
@@ -1240,7 +1270,7 @@
 <p>The server opens one <a href="https://github.com/jackc/pgx">pgx</a> connection pool at startup and pings the database once, because the pool only connects when it is first used and a wrong address should stop the server immediately rather than fail the first request.</p>
 <p>The generated <code>Queries</code> runs on anything that can execute SQL: the pool, a single connection or a transaction. The same query functions are used inside and outside transactions.</p>
 <h2 id="transactions">Transactions<a class="headerlink" href="#transactions" title="Permanent link">&para;</a></h2>
-<p>An operation that writes several rows runs in one transaction, so it either completes or leaves nothing behind. Sign-up inserts an identity, its credential and the credential's identifier; if the identifier is taken, the identity and credential are rolled back too.</p>
+<p>An operation that writes several rows runs in one transaction, so it either completes or leaves nothing behind. Sign-up (<code>SignUpWithPassword</code>) inserts an identity, its credential, the credential's identifier and a session that signs the new account in; if the identifier is taken, the identity and credential are rolled back too, and no session is created.</p>
 <p>These functions accept anything with a <code>Begin</code> method. The server passes the pool, which starts a transaction. Tests pass their own transaction, on which <code>Begin</code> starts a savepoint, so the operation commits or rolls back inside the test's transaction and the test can still roll everything back at the end.</p>
 <h2 id="input-at-the-boundary">Input at the boundary<a class="headerlink" href="#input-at-the-boundary" title="Permanent link">&para;</a></h2>
 <p>Values that must follow a rule before they are stored are fixed or rejected here, before the transaction starts. Login identifiers are normalized with <a href="../../standards/precis/">PRECIS</a>; an identifier that cannot be normalized returns <code>ErrInvalidIdentifier</code>.</p>
